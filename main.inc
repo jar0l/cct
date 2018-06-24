@@ -143,6 +143,7 @@ macro .end label
    section '.idata' import data readable writeable
 
      library msvcrt, 'msvcrt.dll',\
+             verdll, 'version.dll',\
              ntdll, 'ntdll.dll',\
              ole32, 'ole32.dll',\
              oleaut32, 'oleaut32.dll',\
@@ -198,6 +199,10 @@ macro .end label
             pow, 'pow',\
             system, 'system'
 
+     import verdll,\
+            GetFileVersionInfoSize, 'GetFileVersionInfoSizeA',\
+            GetFileVersionInfo, 'GetFileVersionInfoA',\
+            VerQueryValue, 'VerQueryValueA'
 
      import ntdll,\
             RtlGetVersion, 'RtlGetVersion'

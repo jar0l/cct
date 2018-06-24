@@ -226,6 +226,24 @@ macro RGB red, green, blue
 
 ;---------------------------------------------------------------------------------------------------------------------------
 
+struct VS_FIXEDFILEINFO
+    dwSignature        dd ?
+    dwStrucVersion     dd ?
+    dwFileVersionMS    dd ?
+    dwFileVersionLS    dd ?
+    dwProductVersionMS dd ?
+    dwProductVersionLS dd ?
+    dwFileFlagsMask    dd ?
+    dwFileFlags        dd ?
+    dwFileOS           dd ?
+    dwFileType         dd ?
+    dwFileSubtype      dd ?
+    dwFileDateMS       dd ?
+    dwFileDateLS       dd ?
+ends
+
+;---------------------------------------------------------------------------------------------------------------------------
+
 struct RTL_OSVERSIONINFOEXW
     dwOSVersionInfoSize dd ?
     dwMajorVersion      dd ?
@@ -1394,7 +1412,65 @@ interface ISpVoice,\
              jnz     @f
 
     hprn:
-             mov     edi, help
+             mov     eax, [appn]
+             invoke  lstrcpy, smbf, dword [eax]
+             invoke  PathFindExtension, smbf
+             invoke  lstrcmp, eax, exe
+             jz      gfvis
+
+             invoke  lstrcat, smbf, exe
+
+    gfvis:
+             invoke  GetFileVersionInfoSize, smbf, lpt
+             test    eax, eax
+             jz      error
+
+             mov     [cnt], eax
+             cmp     eax, [size]
+             jl      gfvi
+
+             mov     [size], eax
+             cinvoke realloc, [buff], eax
+             test    eax, eax
+             jz      error
+
+             mov     [buff], eax
+
+   gfvi:
+             invoke  GetFileVersionInfo, smbf, [lpt], [cnt], [buff]
+             test    eax, eax
+             jz      error
+
+             mov     [aux], 0
+             invoke  VerQueryValue, [buff], '\', tmp, aux
+             test    eax, eax
+             jz      error
+
+             mov     eax, [aux]
+             test    eax, eax
+             jz      error
+
+             mov     eax, [tmp]
+             mov     ebx, [eax + VS_FIXEDFILEINFO.dwSignature]
+             cmp     ebx, 0xFEEF04BD
+             jne     error
+
+             mov     ebx, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
+             shr     ebx, 16
+             and     ebx, 0FFFFh
+
+             mov     ecx, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
+             and     ecx, 0FFFFh
+
+             mov     edx, [eax + VS_FIXEDFILEINFO.dwFileVersionLS]
+             shr     edx, 16
+             and     edx, 0FFFFh
+
+             mov     eax, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
+             and     eax, 0FFFFh
+
+             cinvoke sprintf, [buff], help, ebx, ecx, edx, eax
+             mov     edi, [buff]
              jmp     bofcl
 
     @@:
@@ -11604,13 +11680,15 @@ interface ISpVoice,\
     cpbf                          rb MAX_PATH
     dpbf                          rb MAX_PATH
     help                          db '$2;'
-                                  db 'Console Command Tool (CCT) v1.0'
+                                  db 'Console Command Tool (CCT) v%d.%d.%d.%d'
                                   db '$8;'
                                   db 0Ah, 0Dh
                                   db 'Created in 2018 by Jos‚ A. Rojo L.'
                                   db 0Ah, 0Dh, 0Ah, 0Dh
                                   db '$@;'
                                   db 'For more information you can see "cct.pdf" file.'
+                                  db 0Ah, 0Dh
+    gith                          db 'You can also go to https://github.com/jar0l/cct'
     snln                          db 0Ah, 0Dh, 0
     zipf                          db 50h, 4Bh, 05h, 06h, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     prn2                          db 'printto', 0
