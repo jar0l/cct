@@ -1325,17 +1325,15 @@ interface ISpVoice,\
              je      error
 
              invoke  GetStdHandle, STD_OUTPUT_HANDLE
+             cmp     eax, INVALID_HANDLE_VALUE
+             je      error
+
              mov     [stdo], eax
-
-             cmp     [stdo], INVALID_HANDLE_VALUE
-             je      error
-
              invoke  GetStdHandle, STD_INPUT_HANDLE
-             mov     [stdi], eax
-
-             cmp     [stdi], INVALID_HANDLE_VALUE
+             cmp     eax, INVALID_HANDLE_VALUE
              je      error
 
+             mov     [stdi], eax
              invoke  RtlZeroMemory,\
                      pinf,\
                      sizeof.PROCESS_INFORMATION
@@ -1452,22 +1450,22 @@ interface ISpVoice,\
 
              mov     eax, [tmp]
              mov     ebx, [eax + VS_FIXEDFILEINFO.dwSignature]
-             cmp     ebx, 0xFEEF04BD
+             cmp     ebx, $FEEF04BD
              jne     error
 
              mov     ebx, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
              shr     ebx, 16
-             and     ebx, 0FFFFh
+             and     ebx, $FFFF
 
              mov     ecx, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
-             and     ecx, 0FFFFh
+             and     ecx, $FFFF
 
              mov     edx, [eax + VS_FIXEDFILEINFO.dwFileVersionLS]
              shr     edx, 16
-             and     edx, 0FFFFh
+             and     edx, $FFFF
 
              mov     eax, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
-             and     eax, 0FFFFh
+             and     eax, $FFFF
 
              cinvoke sprintf, [buff], help, ebx, ecx, edx, eax
              mov     edi, [buff]
@@ -1915,6 +1913,7 @@ interface ISpVoice,\
 
              cinvoke tanh, dword [dbla], dword [dbla + 4]
              fstp    qword [dbla]
+             jmp     fprn
 
     mlog:
              invoke  lstrcmpi, [tmp], '/log'
@@ -1932,6 +1931,7 @@ interface ISpVoice,\
 
              cinvoke log10, dword [dbla], dword [dbla + 4]
              fstp    qword [dbla]
+             jmp     fprn
 
     mfloor:
              invoke  lstrcmpi, [tmp], '/floor'
@@ -1951,6 +1951,7 @@ interface ISpVoice,\
              mov     [xtr], szfb
              cinvoke ceil, dword [dbla], dword [dbla + 4]
              fstp    qword [dbla]
+             jmp     fprn
 
     dblc:
              inc     [aux]
