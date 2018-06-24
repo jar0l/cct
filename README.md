@@ -44,7 +44,6 @@ With strings: the color codes must be located between the dollar character ($) a
 
 With strings: the ASCII codes must be located between the octothorpe character   (#) and the semicolon character (;). Examples: #0A; or #13;
 
-
 # Index
 
 * [Usage](#usage)
@@ -54,6 +53,7 @@ With strings: the ASCII codes must be located between the octothorpe character  
 * [Scripting](#scripting)
 * [Command line examples](#command-line-examples)
 * [Other examples](#other-examples)
+* [Releases](https://github.com/jar0l/cct/releases)
 
 # Usage:
 	cct --operation [/parameter] [value]
