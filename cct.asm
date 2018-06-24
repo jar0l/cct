@@ -1462,7 +1462,6 @@ interface ISpVoice,\
              mov     [bmod], 1
              jmp     topmost
 
-
     @@:
              invoke  lstrcmpi, dword [esi], '--random'
              test    eax, eax

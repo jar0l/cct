@@ -6,7 +6,7 @@ CTT is a small command line utility that allows you to do some useful tasks  wit
 
 **System requirements:** 
 
-This application is a console executable for x86 processors, and it doesn’t require	any	installation process. Just copy the	executable file	to any folder you want, and run it with the desired command line option, according to your needs. The minimum version of the recommended operating system is Windows XP, and the  Service Pack 3 is necessary to access some functionalities. Also it works without estrictions in the latest versions of Microsoft Windows (Vista / 7 / 8 / 10).
+This application is a console executable for x86 processors, and it doesn’t require	any	installation process. Just copy the	executable file	to any folder you want, and run it with the desired command line option, according to your needs. The minimum version of the recommended operating system is Windows XP, and the  Service Pack 3 is necessary to access some functionalities. Also it works without restrictions in the latest versions of Microsoft Windows (Vista / 7 / 8 / 10).
 
 **Output formats:** 
 
@@ -516,10 +516,8 @@ Arguments:
 Example (JScript):
 
 	console.sleep(1000);
-	
 
 
-	
 **WebBrowser:**
 
 window.**external** object (--web-browser operation):
@@ -560,7 +558,7 @@ Example (JScript):
 
 	var hwnd = window.external.hwnd;
 
-**.popup**(message, title, flag):
+**.popup** (message, title, flag):
 
 Show the specified message box and returns the response identifier.
 
@@ -576,7 +574,7 @@ Example (JScript):
 
 	var n = window.external.popup("My message!", "My title", 49);
  
-**.sleep**(milliseconds):
+**.sleep** (milliseconds):
 
 Suspends the execution of the current thread until the time-out interval elapses.
 
