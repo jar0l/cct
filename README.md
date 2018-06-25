@@ -97,8 +97,10 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	--exec           Run a program with the specified parameters.
 	--shell          Run the Windows Shell with the specified parameters.
 	--rundll         Run a dynamic library procedure with the specified
-	--key            parameters. It receives the keys pressed on the console. 
-                      It has support forprinting color characters on the screen.
+	                 parameters.
+					 
+	--key		     Receive the keys pressed on the console. It has support for 
+                     printing color characters on the screen.
 					 
 	--printf         Print text on the screen with the specified format. It has 
                      support for printing color characters.
@@ -413,7 +415,7 @@ Arguments:
 Example (JScript):
 
 	for (var i = 0, n = console.arguments; i < n; ++i)
-		console.echo(console.arguments(i));
+		console.echo(console.arguments(i) + "\n");
 		
 **.echo** ([operation], string):
 
