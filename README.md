@@ -582,8 +582,8 @@ Suspends the execution of the current thread until the time-out interval elapses
 
 Arguments:
 
-	milliseconds: Integer value indicating the interval (in milliseconds)  
-	              you want the script process to be inactive.
+	milliseconds: Integer value indicating the interval you want the script process   
+	              to be inactive.
 				  
 Example (JScript):
 
@@ -714,8 +714,8 @@ Suspends the execution of the current thread until the time-out interval elapses
  
 Arguments:
 
-	milliseconds: Integer value indicating the interval (in milliseconds)  
-	              you want the script process to be inactive.
+	milliseconds: Integer value indicating the interval you want the script process   
+	              to be inactive.
 
 Example (ActionScript):
 
