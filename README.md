@@ -99,7 +99,7 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	--rundll         Run a dynamic library procedure with the specified
 	                 parameters.
 					 
-	--key		     Receive the keys pressed on the console. It has support for 
+	--key            Receive the keys pressed on the console. It has support for 
                      printing color characters on the screen.
 					 
 	--printf         Print text on the screen with the specified format. It has 
@@ -511,8 +511,8 @@ Suspends the execution of the current thread until the time-out interval elapses
 
 Arguments:
 
-	milliseconds: Integer value indicating the interval (in milliseconds)  
-	              you want the script process to be inactive.
+	milliseconds: Integer value indicating the interval you want the script process   
+	              to be inactive.  
 				  
 				  
 Example (JScript):
