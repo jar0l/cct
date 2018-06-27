@@ -6603,6 +6603,10 @@ interface ISpVoice,\
              cmp     eax, 31
              jg      prnchr
 
+             mov     eax, [buff]
+             cmp     byte [eax], 0
+             je      noecho
+
              invoke  CharUpper, [buff]
              cinvoke printf, <'[%s]', 0Ah, 0Dh, 0>, [buff]
              jmp     noecho
