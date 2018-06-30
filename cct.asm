@@ -12043,7 +12043,7 @@ section '.rsrc' resource data readable
 
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
-            'LegalCopyright', <'2018, José A. Rojo L.'>,\
+            'LegalCopyright', '2018, José A. Rojo L.',\
             'FileVersion', '1.0.0.0',\
             'ProductVersion', '1.0.0.0',\
             'ProductName', 'cct',\
