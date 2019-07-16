@@ -1464,7 +1464,7 @@ interface ISpVoice,\
              shr     edx, 16
              and     edx, $FFFF
 
-             mov     eax, [eax + VS_FIXEDFILEINFO.dwFileVersionMS]
+             mov     eax, [eax + VS_FIXEDFILEINFO.dwFileVersionLS]
              and     eax, $FFFF
 
              cinvoke sprintf, [buff], help, ebx, ecx, edx, eax
@@ -2893,7 +2893,8 @@ interface ISpVoice,\
 
              invoke  PathFindExtension, dword [esi]
              invoke  lstrcmpi, eax, zip
-             jne     error
+             test    eax, eax
+             jnz     error
 
              invoke  CoInitialize, 0
              invoke  CoCreateInstance,\
@@ -3751,6 +3752,11 @@ interface ISpVoice,\
 
              invoke  lstrlen, [tmp]
              mov     [cnt], eax
+
+             cinvoke strstr, [tmp], ' '
+             test    eax, eax
+             jnz     runsc
+
              invoke  CryptStringToBinary,\
                      [tmp],\
                      [cnt],\
@@ -7845,6 +7851,7 @@ interface ISpVoice,\
              mov     eax, [esp + 16]
              mov     [pout], eax
              mov     eax, [esp + 12]
+             push    esi
              mov     esi, eax
 
     fnames:
@@ -7927,10 +7934,12 @@ interface ISpVoice,\
              jg      fnames
 
     notimpl:
+             pop     esi
              mov     eax, E_NOTIMPL
              ret     4 * 6
 
     eofgn:
+             pop     esi
              xor     eax, eax
              ret     4 * 6
 
@@ -12044,7 +12053,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.0.0.0',\
-            'ProductVersion', '1.0.0.0',\
+            'FileVersion', '1.1.0.2',\
+            'ProductVersion', '1.1.0.2',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
