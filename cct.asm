@@ -4203,8 +4203,8 @@ interface ISpVoice,\
                      smbf,\
                      NULL
 
-             cmp     eax, 0
-             jne     pchk
+             test    eax, eax
+             jnz     pchk
 
     urldef:
              mov     eax, dword [esi]
@@ -4213,7 +4213,7 @@ interface ISpVoice,\
     pchk:
              invoke  PathIsDirectory, smbf
              test    eax, eax
-             jnz     p2url
+             jnz     wberr
 
              invoke  PathFileExists, smbf
              test    eax, eax
@@ -4239,34 +4239,34 @@ interface ISpVoice,\
 
     eofs:
              mov     eax, cpbf
+             push    eax
              jmp     urlok
 
     uchk:
-             cmp     byte [eax], 'f'
-             je      urlok
+             push    eax
+             cinvoke strstr, eax, ':'
+             mov     ecx, eax
+             pop     eax
+             push    eax
+             test    ecx, ecx
+             jnz     isurl
 
-             cmp     byte [eax], 'F'
-             je      urlok
+             invoke  lstrcpy, cpbf, 'http://'
+             pop     eax
+             invoke  lstrcat, cpbf, eax
+             mov     eax, cpbf
+             push    eax
 
-             cmp     byte [eax], 'h'
-             je      urlok
+    isurl:
+             invoke  PathIsURL, eax
+             test    eax, eax
+             jnz     urlok
 
-             cmp     byte [eax], 'H'
-             je      urlok
-
-             cmp     byte [eax], 'r'
-             je      urlok
-
-             cmp     byte [eax], 'R'
-             je      urlok
-
-             cmp     byte [eax], 48
-             jl      wberr
-
-             cmp     byte [eax], 57
-             jg      wberr
+             pop     eax
+             jmp     wberr
 
     urlok:
+             pop     eax
              mov     [tmp], eax
              jmp     ekarg
 
@@ -8477,9 +8477,11 @@ interface ISpVoice,\
              jnz     @f
 
     noint:
+             push    edx
              mov     edx, [pout]
              mov     eax, 0
              mov     [edx], eax
+             pop     edx
              mov     eax, E_NOINTERFACE
              ret     4 * 3
 
@@ -8533,11 +8535,13 @@ interface ISpVoice,\
              jne     noint
 
              lea     eax, [eax + WB_OBJ.iServiceProvider]
-             jmp     @f
+;            jmp     @f
 
     @@:
+             push    edx
              mov     edx, [pout]
              mov     [edx], eax
+             pop     edx
              xor     eax, eax
              ret     4 * 3
 
@@ -8638,8 +8642,10 @@ interface ISpVoice,\
              test    eax, eax
              jnz     hdoc
 
+             push    ebx
              mov     ebx, [pmo]
              lea     eax, [ebx + WB_OBJ.iDocHostUIHandler]
+             pop     ebx
              cominvk CustomDoc, SetUIHandler, eax
              cominvk CustomDoc, Release
 
@@ -8769,6 +8775,7 @@ interface ISpVoice,\
              test    eax, eax
              jnz     eofec
 
+             push    ebx
              cinvoke sprintf, [buff], szwz, [lpt]
              mov     ebx, [buff]
              add     ebx, eax
@@ -8804,6 +8811,7 @@ interface ISpVoice,\
 
     kcat:
              invoke  lstrcat, [buff], [aux]
+             pop     ebx
 
     kpico:
              mov     [rowc], eax
@@ -9292,10 +9300,8 @@ interface ISpVoice,\
              mov     eax, [esp + 4]
              sub     eax, [eax + 4]
              lea     eax, [eax + WB_OBJ.iSecurityManager]
-             push    ebx
-             mov     ebx, [pout]
-             mov     [ebx], eax
-             pop     ebx
+             mov     edx, [pout]
+             mov     [edx], eax
              xor     eax, eax
              ret     4 * 4
 
@@ -9507,6 +9513,7 @@ interface ISpVoice,\
              mov     eax, [esp + 16]
              mov     [lpt], eax
              mov     eax, [esp + 12]
+             push    esi
              mov     esi, eax
 
     fnames2:
@@ -9587,10 +9594,12 @@ interface ISpVoice,\
              cmp     [lpt], 0
              jg      fnames2
 
+             pop     esi
              mov     eax, E_NOTIMPL
              ret     4 * 6
 
     eofgn2:
+             pop     esi
              xor     eax, eax
              ret     4 * 6
 
@@ -9824,6 +9833,8 @@ interface ISpVoice,\
              ret     4 * 6
 
     IShockwaveFlashEvents@Invoke:
+             mov     [pout], ebx
+             mov     [riid], ecx
              mov     eax, [esp + 8]
              cmp     eax, DISPID_READYSTATECHANGE
              jne     @f
@@ -10308,6 +10319,8 @@ interface ISpVoice,\
             invoke  SysFreeString, [lpt]
 
     eofswfe:
+             mov     ebx, [pout]
+             mov     ecx, [riid]
              mov     eax, eax
              ret     4 * 9
 
@@ -10954,20 +10967,20 @@ interface ISpVoice,\
              invoke  SetWindowText, [bin.hwndOwner], smbf
 
              invoke  SendMessage,\
-                     [ofn.hwndOwner],\
+                     [bin.hwndOwner],\
                      WM_SETICON,\
                      ICON_SMALL,\
                      [icoa]
 
              invoke  SendMessage,\
-                     [ofn.hwndOwner],\
+                     [bin.hwndOwner],\
                      WM_SETICON,\
                      ICON_BIG,\
                      [icoa]
 
     mcw:
              invoke  SendMessage,\
-                     [ofn.hwndOwner],\
+                     [bin.hwndOwner],\
                      WM_SYSCOMMAND,\
                      SC_MINIMIZE,\
                      0
@@ -12053,7 +12066,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.1.0.2',\
-            'ProductVersion', '1.1.0.2',\
+            'FileVersion', '1.2.0.4',\
+            'ProductVersion', '1.2.0.4',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'

@@ -227,7 +227,8 @@ macro .end label
             PathIsDirectory, 'PathIsDirectoryA',\
             PathFileExists, 'PathFileExistsA',\
             PathFindExtension, 'PathFindExtensionA',\
-            PathFindFileName, 'PathFindFileNameA'
+            PathFindFileName, 'PathFindFileNameA',\
+            PathIsURL, 'PathIsURLA'
 
      import crypt32,\
             CryptBinaryToString, 'CryptBinaryToStringA',\
