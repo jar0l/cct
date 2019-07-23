@@ -2935,9 +2935,26 @@ interface ISpVoice,\
              inc     [aux]
              mov     ecx, [aux]
              cmp     [argc], ecx
-             je      unzerr
+             jne     uzarg
 
+             invoke  lstrcpy, [buff], dword [esi]
+             test    eax, eax
+             jz      unzerr
+
+             invoke  lstrlen, eax
+             test    eax, eax
+             jz      unzerr
+
+             sub     eax, 4
+             add     eax, [buff]
+             mov     byte [eax], 0
+             mov     esi, buff
+             jmp     uzfldr
+
+     uzarg:
              add     esi, 4
+
+     uzfldr:
              cmp     byte [esi], 0
              je      unzerr
 
@@ -3081,6 +3098,7 @@ interface ISpVoice,\
              jnz     xerr
 
              mov     [bdat], 0
+             mov     [cnt], 0
              mov     [cla], 0
              mov     [clb], 0
              mov     [clx], 0
@@ -3092,6 +3110,24 @@ interface ISpVoice,\
              je      rxop
 
              add     esi, 4
+             invoke  lstrcmpi, dword [esi], '/extent'
+             test    eax, eax
+             jnz     icase
+
+             inc     [aux]
+             mov     ecx, [aux]
+             cmp     [argc], ecx
+             je      rxop
+
+             add     esi, 4
+             stdcall s2l, dword [esi], 3
+             cmp     eax, LONG_MAX
+             je      rxargs
+
+             mov     [cnt], eax
+             jmp     rxargs
+
+    icase:
              invoke  lstrcmpi, dword [esi], '/i'
              test    eax, eax
              jnz     global
@@ -3126,6 +3162,9 @@ interface ISpVoice,\
     rxstrs:
              invoke  lstrlen, dword [esi]
              mov     [xtr], eax
+             mov     ecx, eax
+             add     ecx, [cnt]
+             mov     [cnt], ecx
              invoke  SysAllocStringLen, 0, eax
              test    eax, eax
              jz      xerr
@@ -3182,7 +3221,10 @@ interface ISpVoice,\
              cmp     [clx], 0
              je      rxerr
 
-             invoke  SysAllocStringLen, 0, 1024
+             mov     ecx, [cnt]
+             add     ecx, 2048
+             mov     [cnt], ecx
+             invoke  SysAllocStringLen, 0, ecx
              test    eax, eax
              jz      rxerr
 
@@ -3194,7 +3236,7 @@ interface ISpVoice,\
                      [lpt],\
                      -1,\
                      smbf,\
-                     1024,\
+                     [cnt],\
                      0,\
                      0
 
@@ -12066,7 +12108,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.2.0.4',\
-            'ProductVersion', '1.2.0.4',\
+            'FileVersion', '1.3.0.6',\
+            'ProductVersion', '1.3.0.6',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
