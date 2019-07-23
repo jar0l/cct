@@ -3230,18 +3230,30 @@ interface ISpVoice,\
 
              mov     [lpt], eax
              cominvk RegExp, Replace, [clb], [clx], lpt
+             mov     eax, [cnt]
+             cmp     eax, [size]
+             jl      rxw2m
+
+             mov     [size], eax
+             cinvoke realloc, [buff], eax
+             test    eax, eax
+             jz      rxerr
+
+             mov     [buff], eax
+
+    rxw2m:
              invoke  WideCharToMultiByte,\
                      CP_ACP,\
                      0,\
                      [lpt],\
                      -1,\
-                     smbf,\
+                     [buff],\
                      [cnt],\
                      0,\
                      0
 
-             invoke  lstrlen, smbf
-             invoke  WriteFile, [stdo], smbf, eax, 0, 0
+             invoke  lstrlen, [buff]
+             invoke  WriteFile, [stdo], [buff], eax, 0, 0
              xor     eax, eax
              jmp     release
 
@@ -12108,7 +12120,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.3.0.6',\
-            'ProductVersion', '1.3.0.6',\
+            'FileVersion', '1.3.0.8',\
+            'ProductVersion', '1.3.0.8',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
