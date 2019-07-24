@@ -162,6 +162,13 @@ SE_ERR_DLLNOTFOUND                            = 20h
 SE_ERR_NOASSOC                                = 1Fh
 SE_ERR_OOM                                    = 8
 SE_ERR_SHARE                                  = 1Ah
+SPF_DEFAULT                                   = 0
+SPF_ASYNC                                     = 1
+SPF_PURGEBEFORESPEAK                          = 2
+SPF_IS_FILENAME                               = 3
+SPF_IS_XML                                    = 4
+SPF_IS_NOT_XML                                = 5
+SPF_PERSIST_XML                               = 6
 SEEK_END                                      = 2
 LONG_MAX                                      = 2147483647
 LONG_MIN                                      = -2147483647
@@ -3124,6 +3131,7 @@ interface ISpVoice,\
              cmp     eax, LONG_MAX
              je      rxargs
 
+             add     eax, [cnt]
              mov     [cnt], eax
              jmp     rxargs
 
@@ -3350,16 +3358,35 @@ interface ISpVoice,\
              jz      sperr
 
              mov     [cla], eax
+             invoke  CreateThread,\
+                     0,\
+                     0,\
+                     SpVoiceKeyPressThread,\
+                     0,\
+                     0,\
+                     riid
+
+             test    eax, eax
+             jz      sperr
+
+             mov     [aux], eax
              invoke  MultiByteToWideChar,\
                      CP_ACP,\
                      0,\
                      [tmp],\
                      [xtr],\
-                     eax,\
+                     [cla],\
                      [xtr]
 
-             cominvk SpVoice, Speak, [cla], 0, 0
+             cominvk SpVoice,\
+                     Speak,\
+                     [cla],\
+                     SPF_ASYNC or SPF_PURGEBEFORESPEAK,\
+                     0
+
+             cominvk SpVoice, WaitUntilDone, INFINITE
              cominvk SpVoice, Release
+             invoke  TerminateThread, [aux], 0
              invoke  SysFreeString, [cla]
              invoke  CoUninitialize
              jmp     exit
@@ -11342,6 +11369,53 @@ interface ISpVoice,\
 
     ;---------------------------------------------------------------------------------------------------------------------------
 
+    proc SpVoiceKeyPressThread, lpParam
+
+    rci3:
+             invoke  RtlZeroMemory, ir, sizeof.INPUT_RECORD
+             invoke  ReadConsoleInput, [stdi], ir, 1, cnt
+             cmp     [cnt], 1
+             jne     rci3
+
+             cmp     [ir.EventType], KEY_EVENT
+             jne     rci3
+
+             cmp     [ir.KeyEvent.bKeyDown], 10000h
+             je      rci3
+
+             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_ESCAPE
+             jne     spvk
+
+             cominvk SpVoice,\
+                     Speak,\
+                     wspv,\
+                     SPF_ASYNC or SPF_PURGEBEFORESPEAK,\
+                     0
+;            cinvoke printf, '[ESCAPE]'
+             jmp     @f
+
+    spvk:
+             cmp     [ir.KeyEvent.wVirtualKeyCode], 0050h ;VK_P
+             jne     spvr
+
+             cominvk SpVoice, Pause
+;            cinvoke printf, '[PAUSE]'
+             jmp     rci3
+
+    spvr:
+             cmp     [ir.KeyEvent.wVirtualKeyCode], 0052h ;VK_R
+             jne     rci3
+
+             cominvk SpVoice, Resume
+;            cinvoke printf, '[RESUME]'
+             jmp     rci3
+
+    @@:
+             ret
+    endp
+
+    ;---------------------------------------------------------------------------------------------------------------------------
+
     proc print, str
              invoke  lstrlen, [str]
              invoke  WriteFile, [stdo], [str], eax, 0, 0
@@ -11873,6 +11947,7 @@ interface ISpVoice,\
                                   du 'reenChange", function () { if (document.msFullscreenElement'
                                   du ') window.external.__fson; }, false); }', 0
     wfle                          du 'file:', 0
+    wspv                          du ' ', 0
     wcls                          WNDCLASS 0, WBMainProc, 0, 0, 0, 0, 0, COLOR_WINDOW + 1, 0, clsn
     gdis                          GDIP_STARTUP_INPUT 1, 0, FALSE, FALSE
     Unknown                       IUnknown
@@ -12120,7 +12195,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.3.0.8',\
-            'ProductVersion', '1.3.0.8',\
+            'FileVersion', '1.4.0.10',\
+            'ProductVersion', '1.4.0.10',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
