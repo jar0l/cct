@@ -6320,9 +6320,6 @@ interface ISpVoice,\
              je      rci
 
              add     esi, 4
-             cmp     byte [esi], 0
-             jz      argloop
-
              invoke  lstrcmpi, dword [esi], '/noecho'
              test    eax, eax
              jnz     down
@@ -12195,7 +12192,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.4.0.10',\
-            'ProductVersion', '1.4.0.10',\
+            'FileVersion', '1.5.0.12',\
+            'ProductVersion', '1.5.0.12',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
