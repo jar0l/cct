@@ -1551,7 +1551,7 @@ interface ISpVoice,\
              inc     [aux]
              mov     ecx, [aux]
              cmp     [argc], ecx
-             je      defseed
+             je      rnd
 
              add     esi, 4
              cmp     byte [esi], 0
@@ -1577,21 +1577,20 @@ interface ISpVoice,\
              jnz     lastn
 
     bxerr:
+             pop     eax
              mov     eax, LONG_MAX
-             jmp     bxret
+             jmp     xret
 
     lastn:
              stdcall s2l, dword [esi], 3
              cmp     eax, LONG_MAX
-             je      bxret
+             je      bxerr
 
              push    eax
              jmp     range
 
-    defseed:
-             cinvoke time, 0
-
     rnd:
+             cinvoke time, 0
              cinvoke srand, eax
              cinvoke rand
              cdq
@@ -1610,10 +1609,6 @@ interface ISpVoice,\
              idiv    ebx
              add     edx, ecx
              mov     eax, edx
-             jmp     xret
-
-    bxret:
-             pop     ebx
              jmp     xret
 
     @@:
@@ -1659,7 +1654,7 @@ interface ISpVoice,\
 
              stdcall s2l, dword [esi], 3
              cmp     eax, LONG_MAX
-             je      bxret
+             je      bxerr
 
              push    eax
              invoke  lstrcmpi, [tmp], ssum
@@ -3357,6 +3352,7 @@ interface ISpVoice,\
              test    eax, eax
              jz      sperr
 
+             mov     [bdat], 0
              mov     [cla], eax
              invoke  CreateThread,\
                      0,\
@@ -6424,6 +6420,16 @@ interface ISpVoice,\
              jmp     cmpkey
 
     noretvk:
+             invoke  lstrcmpi, [buff], 'space'
+             test    eax, eax
+             jnz     nospcvk
+
+             pop     eax
+             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_SPACE
+             je      eofkey
+             jmp     cmpkey
+
+    nospcvk:
              invoke  lstrcmpi, [buff], 'left'
              test    eax, eax
              jnz     nolvk
@@ -11392,17 +11398,19 @@ interface ISpVoice,\
              jmp     @f
 
     spvk:
-             cmp     [ir.KeyEvent.wVirtualKeyCode], 0050h ;VK_P
+             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_SPACE
+             jne     rci3
+
+             cmp     [bdat], 0
              jne     spvr
 
+             mov     [bdat], 1
              cominvk SpVoice, Pause
 ;            cinvoke printf, '[PAUSE]'
              jmp     rci3
 
     spvr:
-             cmp     [ir.KeyEvent.wVirtualKeyCode], 0052h ;VK_R
-             jne     rci3
-
+             mov     [bdat], 0
              cominvk SpVoice, Resume
 ;            cinvoke printf, '[RESUME]'
              jmp     rci3
@@ -12192,7 +12200,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.5.0.12',\
-            'ProductVersion', '1.5.0.12',\
+            'FileVersion', '1.6.0.14',\
+            'ProductVersion', '1.6.0.14',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
