@@ -2421,31 +2421,56 @@ interface ISpVoice,\
 
      dodir:
              invoke  lstrcpy, smbf, dword [esi]
-             invoke  lstrlen, dword [esi]
+             invoke  lstrlen, smbf
+             cmp     eax, 6
+             jl      error
+
              push    eax
              mov     eax, smbf
              pop     ecx
+             dec     ecx
              add     eax, ecx
 
      bogfl:
-             cmp     byte [eax], '?'
-             jne     novar
+             cmp     byte [eax], ':'
+             je      error
 
+             cmp     byte [eax], '&'
+             je      clnv
+
+             cmp     byte [eax], '?'
+             jne     noque
+
+     clnv:
              mov     byte [eax], 0
              jmp     eofnl
+
+     noque:
+             cmp     byte [eax], '='
+             jne     novar
+
+             inc     eax
+             jmp     chkdt
 
      novar:
              cmp     byte [eax], '/'
              jne     eofnl
 
              inc     eax
-             jmp     chkdt
+             cmp     byte [eax], 0
+             jne     chkdt
+
+             dec     eax
+             mov     byte [eax], 0
 
      eofnl:
              dec     eax
              dec     ecx
              test    ecx, ecx
              jnz     bogfl
+
+             push    eax
+             jmp     urldl
 
      eofstr:
              mov     byte [eax], 0
@@ -4328,10 +4353,10 @@ interface ISpVoice,\
              test    ecx, ecx
              jnz     isurl
 
-             invoke  lstrcpy, cpbf, 'http://'
+             invoke  lstrcpy, smbf, 'http://'
              pop     eax
-             invoke  lstrcat, cpbf, eax
-             mov     eax, cpbf
+             invoke  lstrcat, smbf, eax
+             mov     eax, smbf
              push    eax
 
     isurl:
@@ -11839,6 +11864,10 @@ interface ISpVoice,\
     bmbf                          rb MAX_PATH
     cpbf                          rb MAX_PATH
     dpbf                          rb MAX_PATH
+    epbf                          rb MAX_PATH
+    fpbf                          rb MAX_PATH
+    gpbf                          rb MAX_PATH
+    hpbf                          rb MAX_PATH
     help                          db '$2;'
                                   db 'Console Command Tool (CCT) v%d.%d.%d.%d'
                                   db '$8;'
@@ -12200,7 +12229,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.6.0.14',\
-            'ProductVersion', '1.6.0.14',\
+            'FileVersion', '1.7.0.16',\
+            'ProductVersion', '1.7.0.16',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
