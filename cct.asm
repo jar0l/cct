@@ -2397,7 +2397,7 @@ interface ISpVoice,\
              je      error
 
              mov     ebx, dword [esi]
-
+             mov     [xtr], esi
              inc     [aux]
              mov     ecx, [aux]
              cmp     [argc], ecx
@@ -2408,12 +2408,34 @@ interface ISpVoice,\
              je      error
 
              invoke  PathIsDirectory, dword [esi]
+             mov     [bdat], al
              test    eax, eax
              jz      dofile
 
-             mov     [bdat], 1
              sub     esi, 4
              jmp     dodir
+
+     xtrdir:
+             cmp     [bdat], 0
+             je      chkdir
+
+             add     esi, 4
+             mov     [aux], eax
+             mov     eax, dword [esi]
+             mov     [tmp], eax
+             jmp     nwpt
+
+     chkdir:
+             mov     [aux], eax
+             mov     esi, aux
+             invoke  PathIsDirectory, eax
+             mov     [bdat], al
+             test    eax, eax
+             jz      dofile
+
+             sub     esi, 4
+             mov     eax, [aux]
+             jmp     chkdt
 
      dofile:
              mov     eax, dword [esi]
@@ -2422,7 +2444,7 @@ interface ISpVoice,\
      dodir:
              invoke  lstrcpy, smbf, dword [esi]
              invoke  lstrlen, smbf
-             cmp     eax, 6
+             cmp     eax, 3
              jl      error
 
              push    eax
@@ -2435,22 +2457,18 @@ interface ISpVoice,\
              cmp     byte [eax], ':'
              je      error
 
+             cmp     byte [eax], '='
+             je      clnv
+
              cmp     byte [eax], '&'
              je      clnv
 
              cmp     byte [eax], '?'
-             jne     noque
+             jne     novar
 
      clnv:
              mov     byte [eax], 0
              jmp     eofnl
-
-     noque:
-             cmp     byte [eax], '='
-             jne     novar
-
-             inc     eax
-             jmp     chkdt
 
      novar:
              cmp     byte [eax], '/'
@@ -2458,7 +2476,7 @@ interface ISpVoice,\
 
              inc     eax
              cmp     byte [eax], 0
-             jne     chkdt
+             jne     xtrdir
 
              dec     eax
              mov     byte [eax], 0
@@ -2469,8 +2487,7 @@ interface ISpVoice,\
              test    ecx, ecx
              jnz     bogfl
 
-             push    eax
-             jmp     urldl
+             jmp     xtrdir
 
      eofstr:
              mov     byte [eax], 0
@@ -2478,8 +2495,8 @@ interface ISpVoice,\
 
      chkdt:
              push    eax
-             cmp     [bdat], 1
-             jne     urldl
+             cmp     [bdat], 0
+             je      urldl
 
              add     esi, 4
              invoke  lstrlen, dword [esi]
@@ -2504,11 +2521,51 @@ interface ISpVoice,\
              sub     eax, ecx
              inc     eax
              pop     ecx
-             cinvoke sprintf, [buff], '%s\%s', eax, ecx
-             push    [buff]
+
+             mov     [aux], ecx
+             mov     [tmp], eax
+
+     fndf:
+             cinvoke strstr, [aux], '\'
+             test    eax, eax
+             jz      nwpt
+
+             inc     eax
+             mov     [aux], eax
+             jmp     fndf
+
+     nwpt:
+             cinvoke sprintf, [buff], '%s\%s', [tmp], [aux]
+             dec     eax
+             add     eax, [buff]
+             cmp     byte [eax], '\'
+             jne     nxchk
+
+             mov     byte [eax], 0
+
+     nxchk:
+             mov     [bdat], 0
+             mov     eax, [buff]
+             jmp     chkdir
 
      urldl:
              pop     eax
+             mov     [aux], eax
+             cinvoke strstr, ebx, ':'
+             test    eax, eax
+             jnz     nogen
+
+             invoke  lstrcpy, [buff], [aux]
+             mov     esi, [xtr]
+             invoke  lstrcpy, smbf, dword [esi]
+             mov     eax, [buff]
+             mov     ebx, http
+             jmp     cllfn
+
+     nogen:
+             mov    eax, [aux]
+
+     cllfn:
              invoke  URLDownloadToFile,\
                      0,\
                      ebx,\
@@ -4353,10 +4410,9 @@ interface ISpVoice,\
              test    ecx, ecx
              jnz     isurl
 
-             invoke  lstrcpy, smbf, 'http://'
              pop     eax
-             invoke  lstrcat, smbf, eax
-             mov     eax, smbf
+             invoke  lstrcpy, smbf, eax
+             mov     eax, http
              push    eax
 
     isurl:
@@ -11860,6 +11916,7 @@ interface ISpVoice,\
     fds                           WIN32_FIND_DATA
     sinf                          STARTUPINFO
     pinf                          PROCESS_INFORMATION
+    http                          db 'http://'
     smbf                          rb MAX_PATH
     bmbf                          rb MAX_PATH
     cpbf                          rb MAX_PATH
@@ -12229,7 +12286,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.7.0.16',\
-            'ProductVersion', '1.7.0.16',\
+            'FileVersion', '1.8.0.18',\
+            'ProductVersion', '1.8.0.18',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
