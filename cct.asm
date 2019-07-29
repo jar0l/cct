@@ -124,6 +124,7 @@ LOCALE_SYSTEM_DEFAULT                         = 800h
 BINDF_GETNEWESTVERSION                        = 10h
 BINDF_IGNORESECURITYPROBLEM                   = 100h
 VT_EMPTY                                      = 0
+VT_I2                                         = 2
 VT_I4                                         = 3
 VT_BSTR                                       = 8
 VT_DISPATCH                                   = 9
@@ -8124,9 +8125,12 @@ interface ISpVoice,\
              mov     ebx, [eax + DISPPARAMS.rgvarg]
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_I2
+             je      getn1
+
              cmp     edx, VT_I4
              jne     btm
-
+    getn1:
              mov     edx, [ebx + VARIANT.lVal]
              mov     [pout], edx
              add     ebx, 16
@@ -8216,9 +8220,13 @@ interface ISpVoice,\
              mov     ebx, [eax + DISPPARAMS.rgvarg]
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_I2
+             je      getn2
+
              cmp     edx, VT_I4
              jne     btm
 
+    getn2:
              mov     edx, [ebx + VARIANT.lVal]
              mov     [nret], edx
 
@@ -8384,9 +8392,12 @@ interface ISpVoice,\
              mov     ebx, [eax + DISPPARAMS.rgvarg]
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_I2
+             je      getn3
+
              cmp     edx, VT_I4
              jne     btm
-
+    getn3:
              mov     ecx, [ebx + VARIANT.lVal]
              cmp     ecx, 1
              jl      btm
@@ -8425,9 +8436,13 @@ interface ISpVoice,\
              mov     ebx, [eax + DISPPARAMS.rgvarg]
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_I2
+             je      getn4
+
              cmp     edx, VT_I4
              jne     btm
 
+    getn4:
              mov     ecx, [ebx + VARIANT.lVal]
              cmp     ecx, 0
              jl      bbi
@@ -9814,9 +9829,13 @@ interface ISpVoice,\
              mov     ebx, [eax + DISPPARAMS.rgvarg]
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_I2
+             je      getn5
+
              cmp     edx, VT_I4
              jne     btm
 
+    getn5:
              mov     edx, [ebx + VARIANT.lVal]
              mov     [pout], edx
              add     ebx, 16
@@ -12286,7 +12305,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.8.0.18',\
-            'ProductVersion', '1.8.0.18',\
+            'FileVersion', '1.9.0.20',\
+            'ProductVersion', '1.9.0.20',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
