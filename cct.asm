@@ -9029,11 +9029,11 @@ interface ISpVoice,\
              test    eax, eax
              jnz     rkde
 
-             cominvk Element, get_tagName, lpt
+             cominvk Element, get_tagName, spbx
              test    eax, eax
              jnz     rke
 
-             cinvoke _wcsicmp, [lpt], wlnk
+             cinvoke _wcsicmp, [spbx], wlnk
              test    eax, eax
              jnz     rke
 
@@ -9045,24 +9045,24 @@ interface ISpVoice,\
              test    eax, eax
              jnz     rke
 
-             cominvk LinkElement, get_rel, lpt
+             cominvk LinkElement, get_rel, spbx
              test    eax, eax
              jnz     rkle
 
-             cinvoke _wcsicmp, [lpt], wico
+             cinvoke _wcsicmp, [spbx], wico
              test    eax, eax
              jz      kgref
 
-             cinvoke _wcsicmp, [lpt], wsci
+             cinvoke _wcsicmp, [spbx], wsci
              test    eax, eax
              jnz     rkle
 
     kgref:
-             cominvk LinkElement, get_href, lpt
+             cominvk LinkElement, get_href, spbx
              test    eax, eax
              jnz     rkle
 
-             cinvoke sprintf, [buff], szwz, [lpt]
+             cinvoke sprintf, [buff], szwz, [spbx]
              invoke  lstrcmp, cpbf, [buff]
              test    eax, eax
              jz      krec
@@ -9077,12 +9077,12 @@ interface ISpVoice,\
 
     kglurl:
              mov     [aux], eax
-             cominvk WebBrowser, get_LocationURL, lpt
+             cominvk WebBrowser, get_LocationURL, spbx
              test    eax, eax
              jnz     eofec
 
              push    ebx
-             cinvoke sprintf, [buff], szwz, [lpt]
+             cinvoke sprintf, [buff], szwz, [spbx]
              mov     ebx, [buff]
              add     ebx, eax
 
@@ -9931,7 +9931,7 @@ interface ISpVoice,\
              jne     nobv7
 
              mov     ebx, [ebx + VARIANT.pvarVal]
-             jmp     vt1
+             jmp     vt6
 
     nobv7:
              cmp     edx, VT_BSTR
@@ -10117,7 +10117,6 @@ interface ISpVoice,\
 
              mov     ebx, [lpt]
              add     ebx, 16
-             mov     [lpt], ebx
 
     vt11:
              xor     edx, edx
@@ -10134,17 +10133,12 @@ interface ISpVoice,\
 
              xor     edx, edx
              mov     dx, [ebx + VARIANT.boolVal]
-             mov     ebx, [lpt]
              mov     [bwbt], 0
              cmp     edx, VARIANT_TRUE
-             jne     rgvarg
+             jne     risok2
 
              mov     [bwbt], 1
-
-    rgvarg:
-             sub     ebx, 16
              jmp     risok2
-;            jne     risok2  <--------------------------------------------------------- :0
 
     @@:
 
@@ -12503,7 +12497,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.10.0.22',\
-            'ProductVersion', '1.10.0.22',\
+            'FileVersion', '1.10.0.24',\
+            'ProductVersion', '1.10.0.24',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
