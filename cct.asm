@@ -4333,11 +4333,19 @@ interface ISpVoice,\
     unsel:
              invoke  lstrcmpi, dword [esi], '/unselectable'
              test    eax, eax
-             jnz     fscr
+             jnz     wbsafe
 
              mov     eax, [nlpp]
              or      eax, 10h
              mov     [nlpp], eax
+             jmp     ekarg
+
+    wbsafe:
+             invoke  lstrcmpi, dword [esi], sqsf
+             test    eax, eax
+             jnz     fscr
+
+             mov     [qsaf], 1
              jmp     ekarg
 
     fscr:
@@ -4802,12 +4810,20 @@ interface ISpVoice,\
     unesc2:
              invoke  lstrcmpi, dword [esi], sune
              test    eax, eax
-             jnz     nocm
+             jnz     swsafe
 
              mov     eax, [nlpp]
              or      eax, 01h
              mov     [nlpp], eax
              jmp     esarg
+
+    swsafe:
+             invoke  lstrcmpi, dword [esi], sqsf
+             test    eax, eax
+             jnz     nocm
+
+             mov     [qsaf], 1
+             jmp     ekarg
 
     nocm:
              invoke  lstrcmpi, dword [esi], '/menuless'
@@ -7814,7 +7830,20 @@ interface ISpVoice,\
              cinvoke free, [buff]
 
     @@:
+
+;            pop     eax
+;            invoke  ExitProcess, eax
+
              pop     eax
+             cmp     [qsaf], 1
+             jne     @f
+
+             push    eax
+             invoke  GetCurrentProcess
+             pop     ecx
+             invoke  TerminateProcess, eax, ecx
+    @@:
+
              invoke  ExitProcess, eax
 
     newln:
@@ -12070,6 +12099,7 @@ interface ISpVoice,\
     bcnt                          db 0
     bwbt                          db 0
     bmre                          db 0
+    qsaf                          db 0
     nlpp                          dd 6
     rows                          dd 0
     rowc                          dd 0
@@ -12188,6 +12218,7 @@ interface ISpVoice,\
     sdlg                          db '/dialog', 0
     sfsn                          db '/fullscreen', 0
     sune                          db '/unescape', 0
+    sqsf                          db '/quitsafely', 0
     fico                          db '/favicon.ico', 0
     gdll                          db 'gdiplus.dll', 0
     gsup                          db 'GdiplusStartup', 0
@@ -12497,7 +12528,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.10.0.24',\
-            'ProductVersion', '1.10.0.24',\
+            'FileVersion', '1.12.0.26',\
+            'ProductVersion', '1.12.0.26',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'

@@ -247,6 +247,9 @@ With strings: the ASCII codes must be located between the octothorpe character  
 					 
 	/replace         It replaces the part of the string found in a match with
                      another string.
+					 
+	/extent          Increase buffer size with the specified bytes.
+					 
 
 **speak:**
 
@@ -258,15 +261,16 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	/down            It Indicates that the event is thrown when a key is
                      pressed and not when it is released.
  
-                     The supported keys are: From A to Z, numbers, [esc], [enter] or 
-                     [return], [left], [down], [right], [up], [f1], [f2], [f3], [f4], 
-                     [f5], [f6], [f7], [f8], [f9], [f10], [f11], [f12], [back], [insert], 
-                     [delete], [home], [end], [prior], [next], and [tab].
+                     The supported keys are: From A to Z, numbers, [esc], [enter] or
+                     [return], [space], [left], [down], [right], [up], [f1], [f2], [f3],
+                     [f4], [f5], [f6], [f7], [f8], [f9], [f10], [f11], [f12], [back],
+                     [insert], [delete], [home], [end], [prior], [next], and [tab].
 
 **web-browser:**
 
 	/title           Specify a fixed title for the window.
 	/arguments       Collect the specified arguments for the application.
+	/quitsafely      Secure exit process.
 	/unescape        It prevents the window from closing when the escape key
                      is pressed and released.
 					 
@@ -288,6 +292,7 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	/title           Specify a title for the window.
 	/icon            Specify a icon file for the window.
 	/arguments       Collect the specified arguments for the application.
+	/quitsafely      Secure exit process.
 	/background      Specify a background color.
 	/menuless        It disables the context menu.
 	/unescape        It prevents the window from closing when the escape key
