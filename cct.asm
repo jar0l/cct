@@ -129,6 +129,9 @@ VT_I4                                         = 3
 VT_BSTR                                       = 8
 VT_DISPATCH                                   = 9
 VT_BOOL                                       = 11
+VT_VARIANT                                    = 12
+VT_BYREF                                      = 4000h
+VT_BYREFVAR                                   = VT_BYREF or VT_VARIANT
 VARIANT_TRUE                                  = $FFFF
 VARIANT_FALSE                                 = $0000
 FOF_SILENT                                    = 0004h
@@ -8123,24 +8126,56 @@ interface ISpVoice,\
              jne     bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+             mov     [lpt], ebx
+
+    vt1:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
-             cmp     edx, VT_I2
-             je      getn1
+             cmp     edx, VT_BYREFVAR
+             jne     nobv1
 
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt1
+
+    nobv1:
+             cmp     edx, VT_I2
+             jne     noi2_1
+
+             xor     edx, edx
+             mov     dx, [ebx + VARIANT.iVal]
+             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             jle     setn1
+
+             mov     eax, 65536
+             sub     edx, eax
+             jmp     setn1
+
+    noi2_1:
              cmp     edx, VT_I4
              jne     btm
-    getn1:
+
              mov     edx, [ebx + VARIANT.lVal]
+
+    setn1:
              mov     [pout], edx
+             mov     ebx, [lpt]
              add     ebx, 16
+             mov     [lpt], ebx
+
+    vt1_2:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nbv1_2
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt1_2
+
+    nbv1_2:
              cmp     edx, VT_BSTR
              jne     btm
 
              mov     edx, [ebx + VARIANT.bstrVal]
-             push    ebx
              invoke  WideCharToMultiByte,\
                      CP_ACP,\
                      0,\
@@ -8150,10 +8185,21 @@ interface ISpVoice,\
                      1024,\
                      0,\
                      0
-             pop     ebx
+
+             mov     ebx, [lpt]
              add     ebx, 16
+
+    vt1_3:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nbv1_3
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt1_3
+
+    nbv1_3:
+
              cmp     edx, VT_BSTR
              jne     btm
 
@@ -8167,6 +8213,7 @@ interface ISpVoice,\
                      [size],\
                      0,\
                      0
+
              invoke  MessageBox, [ofn.hwndOwner], [buff], smbf, [pout]
              mov     [pout], eax
 
@@ -8218,16 +8265,36 @@ interface ISpVoice,\
 
     gnret:
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt2:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
-             cmp     edx, VT_I2
-             je      getn2
+             cmp     edx, VT_BYREFVAR
+             jne     nobv2
 
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt2
+
+    nobv2:
+             cmp     edx, VT_I2
+             jne     noi2_2
+
+             xor     edx, edx
+             mov     dx, [ebx + VARIANT.iVal]
+             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             jle     setn2
+
+             mov     eax, 65536
+             sub     edx, eax
+             jmp     setn2
+
+    noi2_2:
              cmp     edx, VT_I4
              jne     btm
 
-    getn2:
              mov     edx, [ebx + VARIANT.lVal]
+
+    setn2:
              mov     [nret], edx
 
     ssuni:
@@ -8259,8 +8326,17 @@ interface ISpVoice,\
              jl      rci2
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt3:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv3
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt3
+
+    nobv3:
              cmp     edx, VT_BSTR
              jne     btm
 
@@ -8390,15 +8466,36 @@ interface ISpVoice,\
              jne     bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt4:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
-             cmp     edx, VT_I2
-             je      getn3
+             cmp     edx, VT_BYREFVAR
+             jne     nobv4
 
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt4
+
+    nobv4:
+             cmp     edx, VT_I2
+             jne     noi2_3
+
+             xor     ecx, ecx
+             mov     cx, [ebx + VARIANT.iVal]
+             cmp     ecx, 32767                                                                                              ; Sign fix for VBS.
+             jle     setn3
+
+             mov     eax, 65536
+             sub     ecx, eax
+             jmp     setn3
+
+    noi2_3:
              cmp     edx, VT_I4
              jne     btm
-    getn3:
+
              mov     ecx, [ebx + VARIANT.lVal]
+
+    setn3:
              cmp     ecx, 1
              jl      btm
 
@@ -8434,16 +8531,36 @@ interface ISpVoice,\
 
     garg:
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt5:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
-             cmp     edx, VT_I2
-             je      getn4
+             cmp     edx, VT_BYREFVAR
+             jne     nobv5
 
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt5
+
+    nobv5:
+             cmp     edx, VT_I2
+             jne     noi2_4
+
+             xor     ecx, ecx
+             mov     cx, [ebx + VARIANT.iVal]
+             cmp     ecx, 32767                                                                                              ; Sign fix for VBS.
+             jle     setn4
+
+             mov     eax, 65536
+             sub     ecx, eax
+             jmp     setn4
+
+    noi2_4:
              cmp     edx, VT_I4
              jne     btm
 
-    getn4:
              mov     ecx, [ebx + VARIANT.lVal]
+
+    setn4:
              cmp     ecx, 0
              jl      bbi
 
@@ -8488,10 +8605,18 @@ interface ISpVoice,\
              jne     fargs
 
              add     ebx, 16
+             mov     [lpt], ebx
 
     fargs:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv6
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     fargs
+
+    nobv6:
              cmp     edx, VT_BSTR
              jne     btm
 
@@ -8499,7 +8624,7 @@ interface ISpVoice,\
              cmp     dx, 0
              je      risok
 
-             push    edx ebx ecx
+             push    edx ecx
              invoke  WideCharToMultiByte,\
                      CP_ACP,\
                      0,\
@@ -8510,12 +8635,12 @@ interface ISpVoice,\
                      0,\
                      0
 
-             pop     ecx ebx
+             pop     ecx
              cmp     ecx, 2
              jne     mbstr
 
              pop     edx
-             push    ebx ecx
+             push    ecx
              invoke  WideCharToMultiByte,\
                      CP_ACP,\
                      0,\
@@ -8527,8 +8652,9 @@ interface ISpVoice,\
                      0
 
              mov     [smp], cpbf
-             pop     ecx ebx
+             pop     ecx
              dec     ecx
+             mov     ebx, [lpt]
              sub     ebx, 16
              jmp     fargs
 
@@ -9797,8 +9923,17 @@ interface ISpVoice,\
              jne     bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt6:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv7
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt1
+
+    nobv7:
              cmp     edx, VT_BSTR
              jne     btm
 
@@ -9827,25 +9962,56 @@ interface ISpVoice,\
              jne     bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+             mov     [lpt], ebx
+
+    vt7:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
-             cmp     edx, VT_I2
-             je      getn5
+             cmp     edx, VT_BYREFVAR
+             jne     nobv8
 
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt7
+
+    nobv8:
+             cmp     edx, VT_I2
+             jne     noi2_5
+
+             xor     edx, edx
+             mov     dx, [ebx + VARIANT.iVal]
+             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             jle     setn5
+
+             mov     eax, 65536
+             sub     edx, eax
+             jmp     setn5
+
+    noi2_5:
              cmp     edx, VT_I4
              jne     btm
 
-    getn5:
              mov     edx, [ebx + VARIANT.lVal]
+
+    setn5:
              mov     [pout], edx
+             mov     ebx, [lpt]
              add     ebx, 16
+             mov     [lpt], ebx
+
+    vt8:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv9
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt8
+
+    nobv9:
              cmp     edx, VT_BSTR
              jne     btm
 
              mov     edx, [ebx + VARIANT.bstrVal]
-             push    ebx
              invoke  WideCharToMultiByte,\
                      CP_ACP,\
                      0,\
@@ -9856,10 +10022,19 @@ interface ISpVoice,\
                      0,\
                      0
 
-             pop     ebx
+             mov     ebx, [lpt]
              add     ebx, 16
+
+    vt9:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv10
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt9
+
+    nobv10:
              cmp     edx, VT_BSTR
              jne     btm
 
@@ -9906,6 +10081,7 @@ interface ISpVoice,\
              mov     ebx, [acw]
              mov     [eax + VARIANT.lVal], ebx
              jmp     risok2
+
     @@:
              cmp     eax, 13
              jne     @f
@@ -9917,29 +10093,48 @@ interface ISpVoice,\
              jne     bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+             mov     [lpt], ebx
+
+    vt10:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv11
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt10
+
+    nobv11:
              cmp     edx, VT_BSTR
              jne     btm
 
              xor     edx, edx
              mov     edx, [ebx + VARIANT.bstrVal]
-             push    ebx
              cinvoke sprintf, [buff], szwz, edx
              invoke  lstrcmp, [buff], [key]
-             pop     ebx
              test    eax, eax
              jnz     risok2
 
+             mov     ebx, [lpt]
              add     ebx, 16
+             mov     [lpt], ebx
+
+    vt11:
              xor     edx, edx
              mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv12
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt11
+
+    nobv12:
              cmp     edx, VT_BOOL
              jne     btm
 
              xor     edx, edx
              mov     dx, [ebx + VARIANT.boolVal]
-
+             mov     ebx, [lpt]
              mov     [bwbt], 0
              cmp     edx, VARIANT_TRUE
              jne     rgvarg
@@ -9948,7 +10143,9 @@ interface ISpVoice,\
 
     rgvarg:
              sub     ebx, 16
-             jne     risok2
+             jmp     risok2
+;            jne     risok2  <--------------------------------------------------------- :0
+
     @@:
 
              cmp     eax, 12
@@ -9963,6 +10160,7 @@ interface ISpVoice,\
              mov     [bmre], 1
              xor     eax, eax
              ret     4 * 9
+
     @@:
              cmp     eax, 8
              jne     @f
@@ -12305,7 +12503,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.9.0.20',\
-            'ProductVersion', '1.9.0.20',\
+            'FileVersion', '1.10.0.22',\
+            'ProductVersion', '1.10.0.22',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
