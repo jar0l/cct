@@ -2626,8 +2626,8 @@ interface ISpVoice,\
              cmp     [pmo], 0
              je      nofmem
 
-             invoke  GetProcessHeap, 0
-             invoke  HeapFree, eax, [pmo]
+             invoke  GetProcessHeap
+             invoke  HeapFree, eax, 0, [pmo]
 
      nofmem:
              pop     eax
@@ -4096,7 +4096,7 @@ interface ISpVoice,\
              je      eofscr
 
              invoke  GetProcessHeap
-             invoke  HeapFree, eax, [pmo]
+             invoke  HeapFree, eax, 0, [pmo]
 
     eofscr:
              invoke  CoUninitialize
@@ -11334,7 +11334,7 @@ interface ISpVoice,\
              je      eofswp
 
              invoke  GetProcessHeap
-             invoke  HeapFree, eax, [pmo]
+             invoke  HeapFree, eax, 0, [pmo]
 
     eofswp:
              invoke  PostQuitMessage, 0
@@ -11763,7 +11763,7 @@ interface ISpVoice,\
              je      eofkp
 
              invoke  GetProcessHeap
-             invoke  HeapFree, eax, [pmo]
+             invoke  HeapFree, eax, 0, [pmo]
 
     eofkp:
              invoke  PostQuitMessage, 0
@@ -12644,7 +12644,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.14.0.28',\
-            'ProductVersion', '1.14.0.28',\
+            'FileVersion', '1.14.0.30',\
+            'ProductVersion', '1.14.0.30',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
