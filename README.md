@@ -130,6 +130,10 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	
 # Parameters
 
+**download:**
+
+	/progress        Print the progress of download bytes on screen.
+	
 **unzip:** 
 
 	/quiet           Silent mode (Operational from Windows Vista).

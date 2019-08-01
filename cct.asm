@@ -414,6 +414,13 @@ ends
 
 ;---------------------------------------------------------------------------------------------------------------------------
 
+struct BIND_OBJ
+    iBindStatusCallback     dd ?
+    Base0                   dd ?
+ends
+
+;---------------------------------------------------------------------------------------------------------------------------
+
 struct OLEINPLACEFRAMEINFO
     cb              dd ?
     fMDIApp         dd ?
@@ -2400,6 +2407,21 @@ interface ISpVoice,\
              cmp     byte [esi], 0
              je      error
 
+             invoke  lstrcmpi, dword [esi], '/progress'
+             test    eax, eax
+             jnz     nopg
+
+             mov     [bmod], 1
+             inc     [aux]
+             mov     ecx, [aux]
+             cmp     [argc], ecx
+             je      error
+
+             add     esi, 4
+             cmp     byte [esi], 0
+             je      error
+
+    nopg:
              mov     ebx, dword [esi]
              mov     [xtr], esi
              inc     [aux]
@@ -2500,7 +2522,7 @@ interface ISpVoice,\
      chkdt:
              push    eax
              cmp     [bdat], 0
-             je      urldl
+             je      chkudl
 
              add     esi, 4
              invoke  lstrlen, dword [esi]
@@ -2552,7 +2574,7 @@ interface ISpVoice,\
              mov     eax, [buff]
              jmp     chkdir
 
-     urldl:
+     chkudl:
              pop     eax
              mov     [aux], eax
              cinvoke strstr, ebx, ':'
@@ -2570,13 +2592,45 @@ interface ISpVoice,\
              mov    eax, [aux]
 
      cllfn:
+             push    eax ebx
+             cmp     [bmod], 1
+             jne     nobnd
+
+             invoke  GetConsoleScreenBufferInfo, [stdo], csbi
+             invoke  GetProcessHeap
+             invoke  HeapAlloc, eax, HEAP_ZERO_MEMORY, sizeof.BIND_OBJ
+             test    eax, eax
+             jnz     bndsc
+
+     nobnd:
+             xor     ecx, ecx
+             jmp     urldl
+
+     bndsc:
+             mov     [pmo], eax
+             mov     [eax + BIND_OBJ.iBindStatusCallback], vtbIBindStatusCallback
+             mov     [eax + BIND_OBJ.Base0], 0
+             mov     ebx, [pmo]
+             lea     ecx, [ebx + BIND_OBJ.iBindStatusCallback]
+
+     urldl:
+             pop     ebx eax
              invoke  URLDownloadToFile,\
                      0,\
                      ebx,\
                      eax,\
                      BINDF_GETNEWESTVERSION or BINDF_IGNORESECURITYPROBLEM,\
-                     0
+                     ecx
 
+             push    eax
+             cmp     [pmo], 0
+             je      nofmem
+
+             invoke  GetProcessHeap, 0
+             invoke  HeapFree, eax, [pmo]
+
+     nofmem:
+             pop     eax
              jmp     xret
 
      @@:
@@ -5493,7 +5547,7 @@ interface ISpVoice,\
              push    eax
              xor     ecx, ecx
              mov     cl, byte [eax]
-             cinvoke printf, '%02X', ecx
+             cinvoke printf, '%02x', ecx
              pop     eax
              inc     eax
              dec     [xtrb]
@@ -7830,10 +7884,6 @@ interface ISpVoice,\
              cinvoke free, [buff]
 
     @@:
-
-;            pop     eax
-;            invoke  ExitProcess, eax
-
              pop     eax
              cmp     [qsaf], 1
              jne     @f
@@ -7842,13 +7892,67 @@ interface ISpVoice,\
              invoke  GetCurrentProcess
              pop     ecx
              invoke  TerminateProcess, eax, ecx
-    @@:
 
+    @@:
              invoke  ExitProcess, eax
 
     newln:
              inc     [rowc]
              jmp     swapping
+
+    ;---------------------------------------------------------------------------------------------------------------------------
+    ; BindStatusCallback Interface
+    ;---------------------------------------------------------------------------------------------------------------------------
+
+    IBindStatusCallback@QueryInterface:
+             mov     eax, E_NOINTERFACE
+             ret     4 * 3
+
+    IBindStatusCallback@OnStartBinding:
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
+
+    IBindStatusCallback@GetPriority:
+             mov     eax, E_NOTIMPL
+             ret     4 * 2
+
+    IBindStatusCallback@OnLowResource:
+             xor     eax, eax
+             ret     4 * 2
+
+    IBindStatusCallback@OnProgress:
+             mov     eax, [esp + 8]
+             mov     [xtr], eax
+             mov     eax, [esp + 12]
+             mov     [aux], eax
+
+             invoke  SetConsoleCursorPosition,\
+                     [stdo],\
+                     dword [csbi.dwCursorPosition]
+             cinvoke printf,\
+                     <'[%d\%d]', 0Ah, 0Dh, 0>,\
+                     [xtr],\
+                     [aux]
+
+;            mov     [nret], eax
+             xor     eax, eax
+             ret     4 * 5
+
+    IBindStatusCallback@OnStopBinding:
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
+
+    IBindStatusCallback@GetBindInfo:
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
+
+    IBindStatusCallback@OnDataAvailable:
+             mov     eax, E_NOTIMPL
+             ret     4 * 5
+
+    IBindStatusCallback@OnObjectAvailable:
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
 
     ;---------------------------------------------------------------------------------------------------------------------------
     ; Scripting Interfaces
@@ -12486,6 +12590,18 @@ interface ISpVoice,\
                                   dd IShockwaveFlashEvents@GetIDsOfNames
                                   dd IShockwaveFlashEvents@Invoke
 
+    vtbIBindStatusCallback        dd IBindStatusCallback@QueryInterface
+                                  dd IUnknown@AddRef
+                                  dd IUnknown@Release
+                                  dd IBindStatusCallback@OnStartBinding
+                                  dd IBindStatusCallback@GetPriority
+                                  dd IBindStatusCallback@OnLowResource
+                                  dd IBindStatusCallback@OnProgress
+                                  dd IBindStatusCallback@OnStopBinding
+                                  dd IBindStatusCallback@GetBindInfo
+                                  dd IBindStatusCallback@OnDataAvailable
+                                  dd IBindStatusCallback@OnObjectAvailable
+
 .end @start
 
 ;---------------------------------------------------------------------------------------------------------------------------
@@ -12528,7 +12644,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.12.0.26',\
-            'ProductVersion', '1.12.0.26',\
+            'FileVersion', '1.14.0.28',\
+            'ProductVersion', '1.14.0.28',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
