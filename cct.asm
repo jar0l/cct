@@ -2577,7 +2577,7 @@ interface ISpVoice,\
      chkudl:
              pop     eax
              mov     [aux], eax
-             cinvoke strstr, ebx, ':'
+             cinvoke strstr, ebx, '://'
              test    eax, eax
              jnz     nogen
 
@@ -4469,7 +4469,7 @@ interface ISpVoice,\
 
     uchk:
              push    eax
-             cinvoke strstr, eax, ':'
+             cinvoke strstr, eax, '://'
              mov     ecx, eax
              pop     eax
              push    eax
@@ -12644,7 +12644,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.14.0.30',\
-            'ProductVersion', '1.14.0.30',\
+            'FileVersion', '1.15.0.32',\
+            'ProductVersion', '1.15.0.32',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'

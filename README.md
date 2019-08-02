@@ -738,6 +738,7 @@ Example (ActionScript):
 	cct --download https://mydomain.net/myfile.zip
 	cct --download http://mydomain.net/myfile.zip "D:\My File.zip"
 	cct --download http://mydomain.net/myfile.zip "D:\My Folder"
+	cct --download /progress http://mydomain.net/myfile.zip "D:\My File.zip"
 
 **zip:**
 
