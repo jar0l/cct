@@ -472,7 +472,7 @@ Example (JScript):
 
 **.password** [([text])]:
 
-Return the specified character set and prints asterisks (*) on the screen.
+Obtain User Input from the command prompt and prints asterisks (*) on the screen.
 
 Arguments:
 
@@ -482,6 +482,19 @@ Example (JScript):
 
 	var p = console.password;
 	var p = console.password("Password: ");
+	
+**.input** [([text])]:
+
+Obtain User Input from the command prompt.
+
+Arguments:
+
+	text: Specify an indicative text.
+
+Example (JScript):
+
+	var s = console.input;
+	var s = console.input("Enter text: ");
 	
 **.popup** (message, title, flag):
 

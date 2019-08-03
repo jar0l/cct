@@ -2577,7 +2577,7 @@ interface ISpVoice,\
      chkudl:
              pop     eax
              mov     [aux], eax
-             cinvoke strstr, ebx, '://'
+             cinvoke strstr, ebx, snet
              test    eax, eax
              jnz     nogen
 
@@ -4100,6 +4100,7 @@ interface ISpVoice,\
 
     eofscr:
              invoke  CoUninitialize
+             call    freebs
              mov     eax, [nret]
              jmp     xret
 
@@ -4469,7 +4470,7 @@ interface ISpVoice,\
 
     uchk:
              push    eax
-             cinvoke strstr, eax, '://'
+             cinvoke strstr, eax, snet
              mov     ecx, eax
              pop     eax
              push    eax
@@ -8229,6 +8230,15 @@ interface ISpVoice,\
              jmp     eofgn
 
     @@:
+             cinvoke wcscmp, dword [esi], wsin
+             test    eax, eax
+             jnz     @f
+
+             mov     eax, [tmp]
+             mov     dword [eax], 18
+             jmp     eofgn
+
+    @@:
              add     [tmp], 4
              add     esi, 4
              dec     [pout]
@@ -8246,9 +8256,17 @@ interface ISpVoice,\
              ret     4 * 6
 
     IConsoleDispatch@Invoke:
+             mov     [bwbc], 0
              mov     eax, [esp + 28]
              mov     [tmp], eax
              mov     eax, [esp + 8]
+             cmp     eax, 18
+             jne     cfpop
+
+             mov     [bwbc], 1
+             jmp     finput
+
+    cfpop:
              cmp     eax, 17
              jne     fhwnd
 
@@ -8446,6 +8464,7 @@ interface ISpVoice,\
              cmp     eax, 14
              jne     fsleep
 
+    finput:
              invoke  RtlZeroMemory,\
                      ovi,\
                      sizeof.RTL_OSVERSIONINFOEXW
@@ -8535,9 +8554,16 @@ interface ISpVoice,\
 
     pbchr:
              mov     byte [esi], al
-             inc     esi
+             cmp     [bwbc], 1
+             je      pbcin
 
+             inc     esi
              invoke  WriteFile, [stdo], '*', 1, 0, 0
+             jmp     rci2
+
+    pbcin:
+             invoke  WriteFile, [stdo], esi, 1, 0, 0
+             inc     esi
              jmp     rci2
 
     eofpwd:
@@ -8580,6 +8606,9 @@ interface ISpVoice,\
                      eax,\
                      [cnt]
     retv:
+             pop     eax
+             push    eax
+             stdcall addbs, eax
              invoke  VariantInit, [tmp]
              mov     eax, [tmp]
              mov     [eax + VARIANT.vt], VT_BSTR
@@ -10902,6 +10931,7 @@ interface ISpVoice,\
              mov    [argc], eax
              ret
 
+
     freeva:
              cmp     [argv], 0
              je      retfva
@@ -10931,6 +10961,69 @@ interface ISpVoice,\
 
     ;---------------------------------------------------------------------------------------------------------------------------
 
+    freebs:
+             cmp     [icoa], 0
+             je      @f
+
+    fbsl:
+             cmp     [icob], 0
+             je      cfree
+
+             mov     ecx, 4
+             mov     eax, [icob]
+             imul    ecx
+             sub     eax, 4
+             add     eax, [icoa]
+             mov     eax, [eax]
+             invoke  SysFreeString, eax
+             dec     [icob]
+             jmp     fbsl
+
+    cfree:
+             cinvoke free, [icoa]
+
+    @@:
+             ret
+
+    proc addbs, lpbs
+             cmp     [icob], 0
+             jne     ralloc
+
+             cinvoke calloc, 1, 4
+             test    eax, eax
+             jz      @f
+
+             mov     [icoa], eax
+             inc     [icob]
+             mov     ecx, [lpbs]
+             mov     [eax], ecx
+             ret
+
+    ralloc:
+             mov     ecx, 4
+             mov     eax, [icob]
+             inc     eax
+             imul    ecx
+             push    eax
+             cinvoke realloc, [icoa], eax
+             pop     ecx
+             test    eax, eax
+             jz      @f
+
+             mov     [icoa], eax
+             inc     [icob]
+             sub     ecx, 4
+             add     eax, ecx
+             mov     ecx, [lpbs]
+             mov     [eax], ecx
+             ret
+
+    @@:
+             ret
+    endp
+
+    ;---------------------------------------------------------------------------------------------------------------------------
+
     proc SWFHookProc hwnd, wmsg, wparam, lparam
              cmp     [wmsg], WM_RBUTTONDOWN
              jne     @f
@@ -10942,13 +11035,13 @@ interface ISpVoice,\
              ret
 
    @@:
-            invoke CallWindowProc,\
-                   [wbh],\
-                   [hwnd],\
-                   [wmsg],\
-                   [wparam],\
-                   [lparam]
-            ret
+             invoke CallWindowProc,\
+                    [wbh],\
+                    [hwnd],\
+                    [wmsg],\
+                    [wparam],\
+                    [lparam]
+             ret
     endp
 
     ;---------------------------------------------------------------------------------------------------------------------------
@@ -12270,6 +12363,7 @@ interface ISpVoice,\
     fpbf                          rb MAX_PATH
     gpbf                          rb MAX_PATH
     hpbf                          rb MAX_PATH
+    snet                          db ':/', 0
     help                          db '$2;'
                                   db 'Console Command Tool (CCT) v%d.%d.%d.%d'
                                   db '$8;'
@@ -12365,6 +12459,7 @@ interface ISpVoice,\
     wmre                          du 'more', 0
     wslp                          du 'sleep', 0
     wpwd                          du 'password', 0
+    wsin                          du 'input', 0
     warg                          du 'arguments', 0
     whwn                          du 'hwnd', 0
     wpup                          du 'popup', 0
@@ -12644,7 +12739,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.15.0.32',\
-            'ProductVersion', '1.15.0.32',\
+            'FileVersion', '1.16.0.34',\
+            'ProductVersion', '1.16.0.34',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
