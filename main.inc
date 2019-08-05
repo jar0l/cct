@@ -180,6 +180,9 @@ macro .end label
             _wcsicmp, '_wcsicmp',\
             _wcsnicmp, '_wcsnicmp',\
             _strnicmp, '_strnicmp',\
+            getchar, 'getchar',\
+            _getch, '_getch',\
+            putchar, 'putchar',\
             rand, 'rand',\
             srand, 'srand',\
             time, 'time',\

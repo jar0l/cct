@@ -142,8 +142,17 @@ FOF_NO_UI                                     = FOF_SILENT or FOF_NOCONFIRMATION
 TH32CS_SNAPTHREAD                             = 00000004h
 CLSCTX_INPROC_SERVER                          = 01h
 VER_NT_WORKSTATION                            = 1
-SHIFT_PRESSED                                 = 10h
+;SHIFT_PRESSED                                = 10h
 KEY_EVENT                                     = 1
+GETCH_VK_HOME                                 = 71
+GETCH_VK_END                                  = 79
+GETCH_VK_LEFT                                 = 75
+GETCH_VK_RIGHT                                = 77
+GETCH_VK_DEL                                  = 83
+INPUT_MOUSE                                   = 0
+INPUT_KEYBOARD                                = 1
+INPUT_HARDWARE                                = 2
+KEYEVENTF_KEYUP                               = 0002h
 INFINITE                                      = -1
 SEE_MASK_NOCLOSEPROCESS                       = 00000040h
 CREATE_DEFAULT_ERROR_MODE                     = 04000000h
@@ -174,6 +183,8 @@ SPF_IS_XML                                    = 4
 SPF_IS_NOT_XML                                = 5
 SPF_PERSIST_XML                               = 6
 SEEK_END                                      = 2
+SHRT_MAX                                      = 32767
+USHRT_MAX                                     = 65535
 LONG_MAX                                      = 2147483647
 LONG_MIN                                      = -2147483647
 
@@ -286,6 +297,41 @@ ends
 struct INPUT_RECORD
     EventType dw ?
     KeyEvent  KEY_EVENT_RECORD
+ends
+
+;---------------------------------------------------------------------------------------------------------------------------
+
+struct MOUSEINPUT
+    dx          dd ?
+    dy          dd ?
+    mouseData   dd ?
+    dwFlags     dd ?
+    time        dd ?
+    dwExtraInfo dd ?
+ends
+
+struct KEYBDINPUT
+    wVk         dw ?
+    wScan       dw ?
+    dwFlags     dd ?
+    time        dd ?
+    dwExtraInfo dd ?
+ends
+
+struct HARDWAREINPUT
+    uMsg    dd ?
+    wParamL dw ?
+    wParamH dw ?
+ends
+
+struct INPUT
+    type   dd ?
+
+    union
+        mi MOUSEINPUT
+        ki KEYBDINPUT
+        hi HARDWAREINPUT
+    ends
 ends
 
 ;---------------------------------------------------------------------------------------------------------------------------
@@ -3500,7 +3546,7 @@ interface ISpVoice,\
                      SpVoiceKeyPressThread,\
                      0,\
                      0,\
-                     riid
+                     0
 
              test    eax, eax
              jz      sperr
@@ -8294,10 +8340,10 @@ interface ISpVoice,\
 
              xor     edx, edx
              mov     dx, [ebx + VARIANT.iVal]
-             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             cmp     edx, SHRT_MAX                                                                                              ; Sign fix for VBS.
              jle     setn1
 
-             mov     eax, 65536
+             mov     eax, USHRT_MAX + 1
              sub     edx, eax
              jmp     setn1
 
@@ -8432,10 +8478,10 @@ interface ISpVoice,\
 
              xor     edx, edx
              mov     dx, [ebx + VARIANT.iVal]
-             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             cmp     edx, SHRT_MAX                                                                                              ; Sign fix for VBS.
              jle     setn2
 
-             mov     eax, 65536
+             mov     eax, USHRT_MAX + 1
              sub     edx, eax
              jmp     setn2
 
@@ -8465,17 +8511,11 @@ interface ISpVoice,\
              jne     fsleep
 
     finput:
-             invoke  RtlZeroMemory,\
-                     ovi,\
-                     sizeof.RTL_OSVERSIONINFOEXW
-             mov     [ovi.dwOSVersionInfoSize], sizeof.RTL_OSVERSIONINFOEXW
-             invoke  RtlGetVersion, ovi
              mov     eax, [esp + 24]
              push    ebx ecx edx esi edi
-             mov     esi, [buff]
              mov     ecx, [eax + DISPPARAMS.cArgs]
              cmp     ecx, 1
-             jl      rci2
+             jl      chkpwd
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
 
@@ -8494,95 +8534,170 @@ interface ISpVoice,\
 
              mov     edx, [ebx + VARIANT.bstrVal]
              cmp     dx, 0
-             je      rci2
+             je      chkpwd
 
              cinvoke printf, szwz, edx
 
-    rci2:
-             invoke  ReadConsoleInput, [stdi], ir, 1, cnt
-             cmp     [cnt], 1
-             jne     rci2
+    chkpwd:
+             mov     esi, [buff]
+             mov     ebx, esi
+             cmp     [bwbc], 0
+             je      getpwd
 
-             cmp     [ir.EventType], KEY_EVENT
-             jne     rci2
-                                                                                                                             ; windows 10 previous versions
-             cmp     [ovi.dwMajorVersion], 10
-             jl      kdctl
+    getstr:
+             cinvoke getchar
+             cmp     eax, 0Ah
+             je      eofbs
 
-             mov     eax, [ir.KeyEvent.dwControlKeyState]
-             and     eax, SHIFT_PRESSED
-             jnz     getkac
+             mov     byte [ebx], al
+             inc     ebx
+             jmp     getstr
 
-    kdctl:
-             cmp     [ir.KeyEvent.bKeyDown], 10000h
-             je      rci2
+    eofbs:
+             mov     byte [ebx], 0
+             jmp     setstr
 
-             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_BACK
-             jne     okeys
+    rvkcod:
+             pop     eax
+             jmp     nobck
+
+    vkcode:
+             mov     [bwbc], 0
+             push    eax
+             test    eax, eax
+             jz      getvk
+
+             invoke  CreateThread,\
+                     0,\
+                     0,\
+                     GetchVKThread,\
+                     0,\
+                     0,\
+                     0
+
+             mov     [lpt], eax
+
+    getvk:
+             cinvoke _getch
+             mov     [bwbc], 1
+
+             cmp     eax, 39h
+             je      rvkcod
+
+             pop     edx
+;             cmp     eax, GETCH_VK_DEL
+;             jne     nodk
+
+;             cinvoke printf, '[VK_DEL]'
+;             jmp     getpwd
+
+;    nodk:
+;             cmp     eax, GETCH_VK_LEFT
+;             jne     nolk
+
+;             mov     edi, [buff]
+;             cmp     edi, esi
+;             je      getpwd
+
+;             dec     esi
+;             cinvoke putchar, VK_BACK
+;             jmp     getpwd
+
+;    nolk:
+;             cmp     eax, GETCH_VK_RIGHT
+;             jne     nork
+
+;             mov     edi, ebx
+;             cmp     edi, esi
+;             je      getpwd
+
+;             inc     esi
+;             cinvoke putchar, 42
+;             jmp     getpwd
+
+;    nork:
+;             cmp     eax, GETCH_VK_HOME
+;             jne     nohmk
+
+;             mov     edi, [buff]
+
+;    homek:
+;             cmp     edi, esi
+;             je      getpwd
+
+;             dec     esi
+;             cinvoke putchar, VK_BACK
+;             jmp     homek
+
+;    nohmk:
+;             cmp     eax, GETCH_VK_END
+;             jne     getpwd
+
+;             cinvoke printf, '[VK_END]'
+;             mov     edi, ebx
+;
+;    endk:
+;             cmp     edi, esi
+;             je      getpwd
+
+;             inc     esi
+;             cinvoke putchar, 42
+;             jmp     endk
+
+    getpwd:
+             cinvoke _getch
+             test    eax, eax
+             jz      vkcode
+
+             cmp     eax, 224
+             je      vkcode
+
+             cmp     eax, VK_RETURN
+             je      eofbs
+
+             cmp     eax, 3                                                                                                     ; Ctrl+^C
+             je      eofbs
+
+             cmp     eax, VK_BACK
+             jne     nobck
 
              mov     edi, [buff]
              cmp     edi, esi
-             je      rci2
+             je      getpwd
 
              dec     esi
-             invoke  GetConsoleScreenBufferInfo, [stdo], csbi
-             sub     [csbi.dwCursorPosition.X], 1
-             invoke  SetConsoleCursorPosition,\
-                     [stdo],\
-                     dword [csbi.dwCursorPosition]
-             invoke  WriteFile, [stdo], ' ', 1, 0, 0
-             invoke  SetConsoleCursorPosition,\
-                     [stdo],\
-                     dword [csbi.dwCursorPosition]
-             jmp     rci2
+             cinvoke putchar, VK_BACK
+             cinvoke putchar, VK_SPACE
+             cinvoke putchar, VK_BACK
+             jmp     getpwd
 
-    okeys:
-             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_RETURN
-             je      eofpwd
-
-             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_ESCAPE
-             je      prnnl
-
-    getkac:
-             xor     eax, eax
-             mov     al,  byte [ir.KeyEvent.AsciiChar]
-             cmp     eax, 127
-             je      rci2
-
+    nobck:
              cmp     eax, 32
-             jl      rci2
+             jl      getpwd
 
-    pbchr:
+             cmp     eax, 127
+             je      getpwd
+
              mov     byte [esi], al
-             cmp     [bwbc], 1
-             je      pbcin
-
              inc     esi
-             invoke  WriteFile, [stdo], '*', 1, 0, 0
-             jmp     rci2
+             cinvoke putchar, 42
+             cmp     esi, ebx
+             jl      getpwd
 
-    pbcin:
-             invoke  WriteFile, [stdo], esi, 1, 0, 0
-             inc     esi
-             jmp     rci2
+             mov     ebx, esi
+             jmp     getpwd
 
-    eofpwd:
-             mov     byte [esi], 0
 
-    prnnl:
-             invoke  WriteFile, [stdo], snln, 2, 0, 0
-             cmp     [ir.KeyEvent.wVirtualKeyCode], VK_ESCAPE
-             je      voidstr
-
+    setstr:
              invoke  lstrlen, [buff]
-             cmp     eax, 0
-             jg      sasl2
+             test    eax, eax
+             jnz     sasl2
 
     voidstr:
              cmp     [tmp], 0
              je      risok2
 
-             push    0
+             mov     ebx, 0
              jmp     retv
 
     sasl2:
@@ -8597,22 +8712,21 @@ interface ISpVoice,\
              ret     4 * 9
 
     retws2:
-             push    eax
+             mov     ebx, eax
              invoke  MultiByteToWideChar,\
                      CP_ACP,\
                      0,\
                      [buff],\
                      [cnt],\
-                     eax,\
+                     ebx,\
                      [cnt]
+
+             stdcall addbs, ebx
+
     retv:
-             pop     eax
-             push    eax
-             stdcall addbs, eax
              invoke  VariantInit, [tmp]
              mov     eax, [tmp]
              mov     [eax + VARIANT.vt], VT_BSTR
-             pop     ebx
              mov     [eax + VARIANT.bstrVal], ebx
              jmp     risok2
 
@@ -8644,10 +8758,10 @@ interface ISpVoice,\
 
              xor     ecx, ecx
              mov     cx, [ebx + VARIANT.iVal]
-             cmp     ecx, 32767                                                                                              ; Sign fix for VBS.
+             cmp     ecx, SHRT_MAX                                                                                              ; Sign fix for VBS.
              jle     setn3
 
-             mov     eax, 65536
+             mov     eax, USHRT_MAX + 1
              sub     ecx, eax
              jmp     setn3
 
@@ -8709,10 +8823,10 @@ interface ISpVoice,\
 
              xor     ecx, ecx
              mov     cx, [ebx + VARIANT.iVal]
-             cmp     ecx, 32767                                                                                              ; Sign fix for VBS.
+             cmp     ecx, SHRT_MAX                                                                                              ; Sign fix for VBS.
              jle     setn4
 
-             mov     eax, 65536
+             mov     eax, USHRT_MAX + 1
              sub     ecx, eax
              jmp     setn4
 
@@ -8734,12 +8848,10 @@ interface ISpVoice,\
              mov     ebx, [argv]
              imul    ecx, 4
              add     ebx, ecx
-             mov     ebx, dword [ebx]
-             push    ebx
+             mov     ebx, [ebx]
              invoke  VariantInit, [tmp]
              mov     eax, [tmp]
              mov     [eax + VARIANT.vt], VT_BSTR
-             pop     ebx
              mov     [eax + VARIANT.bstrVal], ebx
              jmp     risok2
 
@@ -10141,10 +10253,10 @@ interface ISpVoice,\
 
              xor     edx, edx
              mov     dx, [ebx + VARIANT.iVal]
-             cmp     edx, 32767                                                                                              ; Sign fix for VBS.
+             cmp     edx, SHRT_MAX                                                                                              ; Sign fix for VBS.
              jle     setn5
 
-             mov     eax, 65536
+             mov     eax, USHRT_MAX + 1
              sub     edx, eax
              jmp     setn5
 
@@ -11937,11 +12049,26 @@ interface ISpVoice,\
              ret
     endp
 
-    ;---------------------------------------------------------------------------------------------------------------------------
+   ;---------------------------------------------------------------------------------------------------------------------------
 
-    proc print, str
-             invoke  lstrlen, [str]
-             invoke  WriteFile, [stdo], [str], eax, 0, 0
+    proc GetchVKThread, lpParam                                                                                                 ; Fix for 224 char code
+             invoke  Sleep, 100
+             cmp     [bwbc], 1
+             je      @f
+
+             mov     [ip.type], INPUT_KEYBOARD
+             mov     [ip.ki.wScan], 0
+             mov     [ip.ki.time], 0
+             mov     [ip.ki.dwExtraInfo], 0
+             mov     [ip.ki.wVk], 39h                                                                                           ; Space
+             mov     [ip.ki.dwFlags], 0
+
+             invoke  SendInput, 1, ip, sizeof.INPUT
+             mov     [ip.ki.dwFlags], KEYEVENTF_KEYUP
+             invoke  SendInput, 1, ip, sizeof.INPUT
+
+    @@:
+             invoke  TerminateThread, [lpt], 0
              ret
     endp
 
@@ -12350,6 +12477,7 @@ interface ISpVoice,\
     bin                           BROWSEINFO
     csbi                          CONSOLE_SCREEN_BUFFER_INFO
     ir                            INPUT_RECORD
+    ip                            INPUT
     the                           THREADENTRY32
     fds                           WIN32_FIND_DATA
     sinf                          STARTUPINFO
@@ -12739,7 +12867,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.16.0.34',\
-            'ProductVersion', '1.16.0.34',\
+            'FileVersion', '1.18.0.36',\
+            'ProductVersion', '1.18.0.36',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
