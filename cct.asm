@@ -8585,64 +8585,102 @@ interface ISpVoice,\
              je      rvkcod
 
              pop     edx
-;             cmp     eax, GETCH_VK_DEL
-;             jne     nodk
+             cmp     eax, GETCH_VK_DEL
+             jne     nodk
 
-;             cinvoke printf, '[VK_DEL]'
-;             jmp     getpwd
+             mov     edi, ebx
+             cmp     edi, esi
+             je      getpwd
 
-;    nodk:
-;             cmp     eax, GETCH_VK_LEFT
-;             jne     nolk
+    delk:
+             mov     byte [esi], 0
+             mov     byte [ebx], 0
+             mov     ecx, esi
+             inc     ecx
+             invoke  lstrcat, esi, ecx
+             mov     edi, ebx
+             sub     edi, esi
 
-;             mov     edi, [buff]
-;             cmp     edi, esi
-;             je      getpwd
+    rdrw42:
+             mov     ecx, 42
+             cmp     edi, 1
+             jne     nospc
 
-;             dec     esi
-;             cinvoke putchar, VK_BACK
-;             jmp     getpwd
+             mov     ecx, VK_SPACE
 
-;    nolk:
-;             cmp     eax, GETCH_VK_RIGHT
-;             jne     nork
+    nospc:
+             cinvoke putchar, ecx
+             dec     edi
+             test    edi, edi
+             jnz     rdrw42
 
-;             mov     edi, ebx
-;             cmp     edi, esi
-;             je      getpwd
+             mov     edi, ebx
+             sub     edi, esi
 
-;             inc     esi
-;             cinvoke putchar, 42
-;             jmp     getpwd
+    rpos:
+             cinvoke putchar, VK_BACK
+             dec     edi
+             test    edi, edi
+             jnz     rpos
 
-;    nork:
-;             cmp     eax, GETCH_VK_HOME
-;             jne     nohmk
+             dec     ebx
+             jmp     getpwd
 
-;             mov     edi, [buff]
+    nodk:
+             cmp     eax, GETCH_VK_LEFT
+             jne     nolk
 
-;    homek:
-;             cmp     edi, esi
-;             je      getpwd
+             mov     edi, [buff]
+             cmp     edi, esi
+             je      getpwd
 
-;             dec     esi
-;             cinvoke putchar, VK_BACK
-;             jmp     homek
+             dec     esi
+             cinvoke putchar, VK_BACK
+             jmp     getpwd
 
-;    nohmk:
-;             cmp     eax, GETCH_VK_END
-;             jne     getpwd
+    nolk:
+             cmp     eax, GETCH_VK_RIGHT
+             jne     nork
 
-;             cinvoke printf, '[VK_END]'
-;             mov     edi, ebx
-;
-;    endk:
-;             cmp     edi, esi
-;             je      getpwd
+             mov     edi, ebx
+             cmp     edi, esi
+             je      getpwd
 
-;             inc     esi
-;             cinvoke putchar, 42
-;             jmp     endk
+             inc     esi
+             cinvoke putchar, 42
+             jmp     getpwd
+
+    nork:
+             cmp     eax, GETCH_VK_HOME
+             jne     nohmk
+
+             mov     edi, [buff]
+
+    homek:
+             cmp     edi, esi
+             je      getpwd
+
+             dec     esi
+             cinvoke putchar, VK_BACK
+             jmp     homek
+
+    nohmk:
+             cmp     eax, GETCH_VK_END
+             jne     getpwd
+
+             mov     edi, ebx
+
+    endk:
+             cmp     edi, esi
+             je      getpwd
+
+             inc     esi
+             cinvoke putchar, 42
+             jmp     endk
+
+    clspwd:
+             cinvoke printf, snln
+             jmp     eofbs
 
     getpwd:
              cinvoke _getch
@@ -8653,10 +8691,10 @@ interface ISpVoice,\
              je      vkcode
 
              cmp     eax, VK_RETURN
-             je      eofbs
+             je      clspwd
 
              cmp     eax, 3                                                                                                     ; Ctrl+^C
-             je      eofbs
+             je      clspwd
 
              cmp     eax, VK_BACK
              jne     nobck
@@ -8667,9 +8705,7 @@ interface ISpVoice,\
 
              dec     esi
              cinvoke putchar, VK_BACK
-             cinvoke putchar, VK_SPACE
-             cinvoke putchar, VK_BACK
-             jmp     getpwd
+             jmp     delk
 
     nobck:
              cmp     eax, 32
@@ -8678,13 +8714,58 @@ interface ISpVoice,\
              cmp     eax, 127
              je      getpwd
 
+             mov     edi, ebx
+             mov     ecx, ebx
+             mov     [bwbc], 0
+             push    eax
+
+    cpyrs:
+             cmp     edi, esi
+             je      bcpy
+
+             dec     edi
+             xor     eax, eax
+             mov     al, byte [edi]
+             mov     byte [ecx], al
+             dec     ecx
+             mov     [bwbc], 1
+             jmp     cpyrs
+
+    bcpy:
+             pop     eax
              mov     byte [esi], al
-             inc     esi
              cinvoke putchar, 42
+             inc     esi
              cmp     esi, ebx
-             jl      getpwd
+             jl      rd42b
 
              mov     ebx, esi
+
+    rd42b:
+             cmp     [bwbc], 1
+             jne     getpwd
+
+             mov     edi, ebx
+             sub     edi, esi
+             inc     edi
+
+    rd42:
+             cinvoke putchar, 42
+             dec     edi
+             test    edi, edi
+             jnz     rd42
+
+             mov     edi, ebx
+             sub     edi, esi
+             inc     edi
+
+    rdrwb:
+             cinvoke putchar, VK_BACK
+             dec     edi
+             test    edi, edi
+             jnz     rdrwb
+
+             inc     ebx
              jmp     getpwd
 
 
@@ -8875,6 +8956,7 @@ interface ISpVoice,\
              jl      bpc
 
              mov     ebx, [eax + DISPPARAMS.rgvarg]
+;            mov     [lpt], ebx
              cmp     ecx, 2
              jne     fargs
 
@@ -8895,8 +8977,8 @@ interface ISpVoice,\
              jne     btm
 
              mov     edx, [ebx + VARIANT.bstrVal]
-             cmp     dx, 0
-             je      risok
+             test    edx, edx
+             jz      risok
 
              push    edx ecx
              invoke  WideCharToMultiByte,\
@@ -12867,7 +12949,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.18.0.36',\
-            'ProductVersion', '1.18.0.36',\
+            'FileVersion', '1.20.0.38',\
+            'ProductVersion', '1.20.0.38',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
