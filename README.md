@@ -2,7 +2,7 @@
 
 **Introduction:**
 
-CTT is a small command line utility that allows you to do some useful tasks  without the need to display any user interface, although you can also use custom windows with script code or hypertext markup language.
+CCT is a small command line utility that allows you to do some useful tasks without the need to display any user interface, although you can also use custom windows with script code or hypertext markup language.
 
 **System requirements:** 
 
@@ -83,7 +83,10 @@ With strings: the ASCII codes must be located between the octothorpe character  
 	--image2         Convert from one image format to another. The supported 
                      formats are: bmp, jpg, png, and gif. GDI+ is required.
 				 
-	--speak          Speak the contents of the specified text or file.
+	--speak          Speak the contents of the specified text or file. The
+                     space and escape keys can be used to pause or continue
+                     speaking and exit respectively.
+					 
 	--regexp         It allows to operate with texts through regular 
                      expressions.
 
@@ -420,6 +423,10 @@ Command-line arguments are values that you enter at the command line when you ru
 Arguments:
 
 	index: Number of argument to receive. The first element starts at zero.
+
+Example (cmd):
+
+	cct --js /file my-script.js arg1 "arg 2" arg3 ...
 	
 Example (JScript):
 
@@ -470,19 +477,6 @@ Example (JScript):
 	console.more(sf);
 	console.more(" -- My Customized More Text -- ", sf);
 
-**.password** [([text])]:
-
-Obtain User Input from the command prompt and prints asterisks (*) on the screen.
-
-Arguments:
-
-	text: Specify an indicative text.
-
-Example (JScript):
-
-	var p = console.password;
-	var p = console.password("Password: ");
-	
 **.input** [([text])]:
 
 Obtain User Input from the command prompt.
@@ -496,6 +490,19 @@ Example (JScript):
 	var s = console.input;
 	var s = console.input("Enter text: ");
 	
+**.password** [([text])]:
+
+Obtain User Input from the command prompt and prints asterisks (*) on the screen.
+
+Arguments:
+
+	text: Specify an indicative text.
+
+Example (JScript):
+
+	var p = console.password;
+	var p = console.password("Password: ");
+		
 **.popup** (message, title, flag):
 
 Show the specified message box and returns the response identifier.
@@ -526,6 +533,7 @@ Arguments:
 Example (JScript):
 
 	console.quit(-1);
+	console.quit(36);
  
 **.sleep** (milliseconds):
 
@@ -555,6 +563,10 @@ Command-line arguments are values that you enter at the command line when you ru
 Arguments:
 
 	index: Number of argument to receive. The first element starts at zero.
+
+Example (cmd):
+
+	cct --web-browser index.html /arguments arg1 "arg 2" ...
 
 Example (JScript):
 
@@ -670,6 +682,10 @@ Command-line arguments are values that you enter at the command line when you ru
 	 	 	 	 
 The call returns a string in JSON format that can be parsed to pick up an array of arguments.
 
+Example (cmd):
+
+	cct --swf my-file.swf /arguments arg1 "arg 2" ...
+
 Example (ActionScript):
 
 	import flash.external.*;
@@ -682,6 +698,9 @@ Example (ActionScript):
 
 		return v;
 	});
+	sarg = "";
+	for (var i = 0, l = args.length; i < l; i++)
+		sarg += "(" + i + "): " + args[i] + "\n";
 	
 
 **getpath:**
@@ -751,7 +770,7 @@ Example (ActionScript):
 	cct --download https://mydomain.net/myfile.zip
 	cct --download http://mydomain.net/myfile.zip "D:\My File.zip"
 	cct --download http://mydomain.net/myfile.zip "D:\My Folder"
-	cct --download /progress http://mydomain.net/myfile.zip "D:\My File.zip"
+	cct -–download /progress mydomain.net/myfile.zip "D:\My Folder"
 
 **zip:**
 
@@ -799,20 +818,22 @@ Example (ActionScript):
 
 **web-browser:**
 
+	cct --web-browser www.mydomain.com
 	cct --web-browser http://www.mydomain.com
 	cct --web-browser 800 600 /resizable http://www.mydomain.com
+	cct --web-browser 640 480 /dialog "D:\My Folder\My File.html"
 	cct --web-browser /dialog file:///d:/my-directory/my-page.html
 	cct --web-browser /fullscreen http://www.mydomain.com
-	cct --web-browser /trusted 800 600 file:///d:/my-page.html /arguments "argument 1" "argument 2" "argument ..."
+	cct --web-browser /trusted 800 600 app\index.html /arguments "argument 1" "argument 2" "argument ..."
 	
 **swf:**
 
-	cct --swf 800 600 http://www.my-website.com/my-file.swf
+	cct -–swf 800 600 http://www.my-website.com/my-file.swf
 	cct --swf /region /background 0 "D:\My Folder\My File.swf"
-	cct --swf /alpha 75 /background 0 /menuless "D:\My File.swf"
+	cct --swf /alpha 75 /background 0 /menuless "My File.swf"
 	cct --swf /fullscreen "D:\My Folder\My File.swf"
-	cct --swf /title "My Title" /icon "D:\My Folder\My Icon.ico" "D:\My Folder\My File.swf" /arguments “argument 1" "argument 2" "argument ..."
-
+	cct --swf /title "My Title" /icon "D:\My Folder\My Icon.ico" "D:\My Folder\My File.swf" /arguments "argument 1" "argument 2" "argument ..."
+	
 **js:**
 
 	cct --js "new ActiveXObject('WScript.Shell').SendKeys('{F7}')"
@@ -985,3 +1006,6 @@ In a batch file:
 	start chrome -kiosk http://www.mydomain.com
 	cct --sleep 1000
 	cct --js "new ActiveXObject('WScript.Shell').SendKeys('{F11}')"
+
+NOTE: You may or may not play with the -kiosk parameter. The current versions of Chrome don't support a set of keys with this parameter.
+

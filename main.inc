@@ -171,10 +171,12 @@ macro .end label
             printf, 'printf',\
             sprintf, 'sprintf',\
             strstr, 'strstr',\
+            strncmp, 'strncmp',\
             strtol, 'strtol',\
             strtod, 'strtod',\
             atof,'atof',\
             strtoul, 'strtoul',\
+            wcsstr, 'wcsstr',\
             wcscmp, 'wcscmp',\
             wcsncmp, 'wcsncmp',\
             _wcsicmp, '_wcsicmp',\

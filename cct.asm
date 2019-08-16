@@ -30,7 +30,6 @@ include 'main.inc'
 
 ;---------------------------------------------------------------------------------------------------------------------------
 
-;LOCALE_USER_DEFAULT                          = 1024
 CALG_MD5                                      = 00008003h
 CALG_SHA1                                     = 00008004h
 CALG_SHA256                                   = 0000800Ch
@@ -101,10 +100,6 @@ DISPID_FSCOMMAND                              = 150
 DISPID_FLASHCALL                              = 197
 CONTEXT_MENU_CONTROL                          = 2
 ID_SHDOCLC_ACCEL                              = 42
-ID_COPY_CMD                                   = 15
-ID_CUT_CMD                                    = 16
-ID_PASTE_CMD                                  = 26
-ID_UNDO_CMD                                   = 43
 ID_CLOSE_CMD                                  = 50
 DOCHOSTUIDBLCLK_DEFAULT                       = 0
 DOCHOSTUIFLAG_DIALOG                          = 1
@@ -142,7 +137,6 @@ FOF_NO_UI                                     = FOF_SILENT or FOF_NOCONFIRMATION
 TH32CS_SNAPTHREAD                             = 00000004h
 CLSCTX_INPROC_SERVER                          = 01h
 VER_NT_WORKSTATION                            = 1
-;SHIFT_PRESSED                                = 10h
 KEY_EVENT                                     = 1
 GETCH_VK_HOME                                 = 71
 GETCH_VK_END                                  = 79
@@ -690,6 +684,18 @@ interface IOleObject,\
            EnumAdvise,\
            GetMiscStatus,\
            SetColorScheme
+
+interface IOleInPlaceActiveObject,\
+           QueryInterface,\
+           AddRef,\ 
+           Release,\
+           GetWindow,\
+           ContextSensitiveHelp,\
+           TranslateAccelerator,\
+           OnFrameWindowActivate,\
+           OnDocWindowActivate,\
+           ResizeBorder,\
+           EnableModeless
 
 interface IWebBrowser2,\
            QueryInterface,\ 
@@ -1619,8 +1625,8 @@ interface ISpVoice,\
              jmp     xret
 
     firstn:
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      xret
 
              inc     [aux]
@@ -1639,8 +1645,8 @@ interface ISpVoice,\
              jmp     xret
 
     lastn:
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      bxerr
 
              push    eax
@@ -1695,8 +1701,8 @@ interface ISpVoice,\
              cmp     byte [esi], 0
              jz      mxerr
 
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      xret
 
              push    eax
@@ -1709,8 +1715,8 @@ interface ISpVoice,\
              cmp     byte [esi], 0
              jz      bxerr
 
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      bxerr
 
              push    eax
@@ -1900,9 +1906,11 @@ interface ISpVoice,\
              cmp     byte [esi], 0
              jz      xerr
 
-             stdcall s2f, dword [esi], 2
-             fstp    qword [dbla]
+             stdcall s2f, dword [esi]
+             cmp     eax, -1
+             je      xerr
 
+             fstp    qword [dbla]
              invoke  lstrcmpi, [tmp], '/sqrt'
              test    eax, eax
              jnz     mexp
@@ -2022,9 +2030,11 @@ interface ISpVoice,\
              cmp     byte [esi], 0
              jz      xerr
 
-             stdcall s2f, dword [esi], 2
-             fstp    qword [dblb]
+             stdcall s2f, dword [esi]
+             cmp     eax, -1
+             je      xerr
 
+             fstp    qword [dblb]
              invoke  lstrcmpi, [tmp], smod
              test    eax, eax
              jnz     mpow
@@ -2435,7 +2445,10 @@ interface ISpVoice,\
              je      error
 
              add     esi, 4
-             stdcall s2l, dword [esi], 0
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      error
+
              invoke  Sleep, eax
              jmp     exit
 
@@ -2528,6 +2541,9 @@ interface ISpVoice,\
      bogfl:
              cmp     byte [eax], ':'
              je      error
+
+             cmp     byte [eax], '#'
+             je      clnv
 
              cmp     byte [eax], '='
              je      clnv
@@ -3308,8 +3324,8 @@ interface ISpVoice,\
              je      rxop
 
              add     esi, 4
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      rxargs
 
              add     eax, [cnt]
@@ -3588,7 +3604,6 @@ interface ISpVoice,\
     sperr3:
              invoke  CoUninitialize
              jmp     error
-
 
     @@:
              invoke  lstrcmpi, dword [esi], '--script-encoder'
@@ -4465,8 +4480,8 @@ interface ISpVoice,\
              jmp     unt
 
     wszn:
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              jne     wbww
 
              invoke  GetFullPathName,\
@@ -4588,6 +4603,7 @@ interface ISpVoice,\
              mov     [wcls.hInstance], eax
              invoke  LoadIcon, eax, IDI_APPLICATION
              mov     [wcls.hIcon], eax
+
              invoke  LoadCursor, [wcls.hInstance], IDC_ARROW
              mov     [wcls.hCursor], eax
              invoke  RegisterClass, wcls
@@ -4682,9 +4698,9 @@ interface ISpVoice,\
                      0,\
                      0,\
                      SWP_NOSIZE or SWP_NOMOVE or SWP_FRAMECHANGED
-             jmp     accel
+             jmp     wbmod
 
-    noflat:
+        noflat:
              cmp     byte [smp], 0
              je      accel
 
@@ -4712,6 +4728,17 @@ interface ISpVoice,\
              test    eax, eax
              jz      eofkm
 
+             cmp     [OleInPlaceActiveObject], 0
+             je      wbta
+
+             cominvk OleInPlaceActiveObject,\
+                     TranslateAccelerator,\
+                     msg
+
+             test    eax, eax
+             jz      wbgm
+
+    wbta:
              cmp     [hacc], 0
              je      wbtm
 
@@ -4957,8 +4984,8 @@ interface ISpVoice,\
              je      wberr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      wberr
 
              cmp     eax, 100
@@ -4989,8 +5016,8 @@ interface ISpVoice,\
              je      wberr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              je      wberr
 
              mov     [key], eax
@@ -5013,8 +5040,8 @@ interface ISpVoice,\
              jmp     unt2
 
     wszn2:
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              jne     swww
 
              mov     eax, dword [esi]
@@ -5629,7 +5656,11 @@ interface ISpVoice,\
              mov     [cla], eax
              invoke  GetSystemMetrics, SM_CYSCREEN
              mov     [clb], eax
-             invoke  CreateCompatibleBitmap, [tmp], [cla], [clb]
+             invoke  CreateCompatibleBitmap,\
+                     [tmp],\
+                     [cla],\
+                     [clb]
+
              test    eax, eax
              jnz     sbmo
 
@@ -5641,7 +5672,17 @@ interface ISpVoice,\
              mov     [lpt], eax
              invoke  SelectObject, [xtr], eax
              mov     [pout], eax
-             invoke  BitBlt, [xtr], 0, 0, [cla], [clb], [tmp], 0, 0, SRCCOPY
+             invoke  BitBlt,\
+                     [xtr],\
+                     0,\
+                     0,\
+                     [cla],\
+                     [clb],\
+                     [tmp],\
+                     0,\
+                     0,\
+                     SRCCOPY
+
              push    eax
              invoke  SelectObject, [xtr], [pout]
              pop     eax
@@ -5925,22 +5966,22 @@ interface ISpVoice,\
              mov     [riid], eax
 
     i2p:
-            invoke  lstrlen, [xtr]
-            cmp     eax, 4
-            jg      gsi2f
+             invoke  lstrlen, [xtr]
+             cmp     eax, 4
+             jg      gsi2f
 
-            invoke  lstrcpy, smbf, [tmp]
-            invoke  PathFindExtension, smbf
-            test    eax, eax
-            jz      pxcat
+             invoke  lstrcpy, smbf, [tmp]
+             invoke  PathFindExtension, smbf
+             test    eax, eax
+             jz      pxcat
 
-            mov     byte [eax], 0
+             mov     byte [eax], 0
 
     pxcat:
-            invoke  lstrcat, smbf, [xtr]
-            mov     ebx, smbf
-            mov     [xtr], ebx
-            invoke  lstrlen, ebx
+             invoke  lstrcat, smbf, [xtr]
+             mov     ebx, smbf
+             mov     [xtr], ebx
+             invoke  lstrlen, ebx
 
     gsi2f:
              mov     [cnt], eax
@@ -5968,7 +6009,6 @@ interface ISpVoice,\
              call    eax
              test    eax, eax
              jnz     gpefs
-
 
              invoke  SysFreeString, [aux]
              invoke  GetProcAddress, [lpt], gdim
@@ -6401,12 +6441,12 @@ interface ISpVoice,\
              je      callp
 
              sub     esi, 4
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              jne     addprm
 
-             stdcall s2f, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2f, dword [esi]
+             cmp     eax, -1
              je      addstr
 
              inc     [bcnt]
@@ -6971,7 +7011,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     [csbi.dwCursorPosition.X], ax
              jmp     sccp
 
@@ -6986,7 +7029,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     [csbi.dwCursorPosition.Y], ax
 
     sccp:
@@ -7108,7 +7154,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     ecx, [cwr.left]
              sub     [cwr.right], ecx
              mov     ecx, [cwr.top]
@@ -7127,7 +7176,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     ecx, [cwr.top]
              sub     [cwr.bottom], ecx
              mov     ecx, [cwr.left]
@@ -7146,7 +7198,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     ecx, [cwr.top]
              sub     [cwr.bottom], ecx
              mov     [cwr.right], eax
@@ -7163,7 +7218,10 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              mov     ecx, [cwr.left]
              sub     [cwr.right], ecx
              mov     [cwr.bottom], eax
@@ -7258,7 +7316,10 @@ interface ISpVoice,\
              test    eax, eax
              jz      cmdln
 
-             stdcall s2l, dword [esi], 1
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      nonum
+
              cmp     eax, 0
              jl      nonum
 
@@ -7295,7 +7356,10 @@ interface ISpVoice,\
              jmp     xret
 
     setclr:
-             stdcall s2l, dword [esi], 0
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      error
+
              invoke  SetConsoleTextAttribute, [stdo], eax
              jmp     endloop
 
@@ -7327,13 +7391,15 @@ interface ISpVoice,\
              je      xerr
 
              add     esi, 4
-             stdcall s2l, dword [esi], 2
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      xerr
+
              invoke  MessageBox,\
                      [bin.hwndOwner],\
                      [tmp],\
                      [xtrb],\
                      eax
-
 
             jmp      xret
 
@@ -7619,8 +7685,8 @@ interface ISpVoice,\
              cmp     byte [eax], 57
              jg      bchr
 
-             stdcall s2l, dword [esi], 3
-             cmp     eax, LONG_MAX
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
              jne     pusher
 
     bchr:
@@ -7635,7 +7701,10 @@ interface ISpVoice,\
              jmp     pusher
 
     a2i:
-             stdcall s2l, dword [esi], 0
+             stdcall s2l, dword [esi]
+             cmp     edx, LONG_MIN
+             je      error
+
              jmp     pusher
 
     a2u:
@@ -7643,7 +7712,10 @@ interface ISpVoice,\
              jmp     pusher
 
     a2f:
-             stdcall s2f, dword [esi], 0
+             stdcall s2f, dword [esi]
+             cmp     eax, -1
+             je      error
+
              cmp     [bcnt], 2
              jge     error
 
@@ -7981,7 +8053,6 @@ interface ISpVoice,\
                      [xtr],\
                      [aux]
 
-;            mov     [nret], eax
              xor     eax, eax
              ret     4 * 5
 
@@ -9197,7 +9268,6 @@ interface ISpVoice,\
              jne     noint
 
              lea     eax, [eax + WB_OBJ.iServiceProvider]
-;            jmp     @f
 
     @@:
              push    edx
@@ -9247,7 +9317,6 @@ interface ISpVoice,\
              cominvk HtmlDoc, get_parentWindow, Window
              test    eax, eax
              jnz     ncr3
-
 
              cominvk Window, execScript, jse, jsl, var
              cominvk Window, Release
@@ -9431,63 +9500,96 @@ interface ISpVoice,\
              cmp     byte [eax], '/'
              jne     kpico
 
+             inc     eax
+             cmp     byte [eax], '/'
+             jne     kglurl
+
+             dec     eax
+             mov     [aux], eax
+             cominvk WebBrowser, get_LocationURL, spbx
+             test    eax, eax
+             jnz     eofec
+
+             cinvoke sprintf, [buff], szwz, [spbx]
+             cinvoke strstr, [buff], snet
+             test    eax, eax
+             jz      ksvar
+
+             inc     eax
+             mov     byte [eax], 0
+             jmp     kcat3
+
     kglurl:
              mov     [aux], eax
              cominvk WebBrowser, get_LocationURL, spbx
              test    eax, eax
              jnz     eofec
 
-             push    ebx
              cinvoke sprintf, [buff], szwz, [spbx]
-             mov     ebx, [buff]
-             add     ebx, eax
 
-    kroot:
-             dec     eax
-             cmp     eax, 10
-             jl      kcat
+    ksvar:
+             cinvoke strstr, [buff], '?'
+             test    eax, eax
+             jz      ksanch
 
-             dec     ebx
-             cmp     byte [ebx], '?'
-             jne     kand
+             mov     byte [eax], 0
 
-             mov     byte [ebx], 0
-             cmp     [cnt], -1
-             jl      kroot
+    ksanch:
+             cinvoke strstr, [buff], '#'
+             test    eax, eax
+             jz      ksdir
+
+             mov     byte [eax], 0
+
+    ksdir:
+             mov     eax, [aux]
+             cmp     byte [eax], '/'
+             jne     ksdir2
+
+             mov     eax, [buff]
+             add     eax, 10
+             cinvoke strstr, eax, sdir
+             test    eax, eax
+             jnz     kszero
+
              jmp     kcat
 
-    kand:
-             cmp     byte [ebx], '&'
-             jne     kdirs
+    ksdir2:
+             invoke  lstrlen, [buff]
+             add     eax, [buff]
+             dec     eax
 
-             mov     byte [ebx], 0
-             jmp     kroot
+             cmp     byte [eax], '/'
+             jne     kcat
 
-    kdirs:
-             cmp     byte [ebx], '/'
-             jne     kroot
-
-             mov     byte [ebx], 0
-             cmp     [cnt], -1
-             jl      kroot
+    kszero:
+             mov     byte [eax], 0
 
     kcat:
+             mov     eax, [aux]
+             cmp     byte [eax], '/'
+             je      kcat3
+
+    kcat2:
+             invoke  lstrcat, [buff], sdir
+
+    kcat3:
              invoke  lstrcat, [buff], [aux]
-             pop     ebx
 
     kpico:
              mov     [rowc], eax
-             invoke  lstrlen, [buff]
-             add     eax, [buff]
-             inc     eax
-             mov     [rowd], eax
-             invoke  GetTempPath, MAX_PATH, eax
-             invoke  lstrcat, [rowd], '~favicon.ico'
-             invoke  PathFileExists, [rowd]
+             invoke  lstrcmp, epbf, eax
+             test    eax, eax
+             jz      krec
+
+             invoke  lstrcpy, epbf, [rowc]
+             invoke  GetTempPath, MAX_PATH, hpbf
+             invoke  lstrcat, hpbf, '~favicon.ico'
+             invoke  PathFileExists, hpbf
              test    eax, eax
              jz      kdl
 
-             invoke  DeleteFile, [rowd]
+             invoke  DeleteFile, hpbf
              test    eax, eax
              jz      eofec
 
@@ -9495,7 +9597,7 @@ interface ISpVoice,\
              invoke  URLDownloadToFile,\
                      0,\
                      [rowc],\
-                     [rowd],\
+                     hpbf,\
                      BINDF_GETNEWESTVERSION or BINDF_IGNORESECURITYPROBLEM,\
                      0
              test    eax, eax
@@ -9503,7 +9605,7 @@ interface ISpVoice,\
 
              invoke  LoadImage,\
                      0,\
-                     [rowd],\
+                     hpbf,\
                      IMAGE_ICON,\
                      0,\
                      0,\
@@ -9567,7 +9669,7 @@ interface ISpVoice,\
 
     bff:
              mov     [xtrb], eax
-             invoke  lstrlen, [rowd]
+             invoke  lstrlen, hpbf
              mov     [size], eax
              invoke  SysAllocStringLen, 0, eax
              test    eax, eax
@@ -9577,7 +9679,7 @@ interface ISpVoice,\
              invoke  MultiByteToWideChar,\
                      CP_ACP,\
                      0,\
-                     [rowd],\
+                     hpbf,\
                      [size],\
                      eax,\
                      [size]
@@ -9644,90 +9746,90 @@ interface ISpVoice,\
              jmp     boec
 
     rkec2:
-            invoke  SendMessage,\
-                    [clx],\
-                    WM_SETICON,\
-                    ICON_SMALL,\
-                    [icoa]
+             invoke  SendMessage,\
+                     [clx],\
+                     WM_SETICON,\
+                     ICON_SMALL,\
+                     [icoa]
 
-            cominvk ElementCollection2, Release
-            cmp     [cnt], -1
-            jl      rsok
+             cominvk ElementCollection2, Release
+             cmp     [cnt], -1
+             jl      rsok
 
     rkdl:
-            cominvk DispLink, Release
+             cominvk DispLink, Release
 
     rkec:
-            cominvk ElementCollection, Release
+             cominvk ElementCollection, Release
 
     rkhd:
-            cominvk HtmlDoc, Release
+             cominvk HtmlDoc, Release
 
     rkdd:
-            cominvk DispDoc, Release
+             cominvk DispDoc, Release
 
     rsok:
-            xor     eax, eax
-            ret     4 * 9
+             xor     eax, eax
+             ret     4 * 9
 
     @@:
-            mov     eax, E_NOTIMPL
-            ret     4 * 9
+             mov     eax, E_NOTIMPL
+             ret     4 * 9
 
     dico:
-           dec      [cnt]
-           mov      eax, fico
-           jmp      kglurl
+             dec      [cnt]
+             mov      eax, fico
+             jmp      kglurl
 
     IOleClientSite@SaveObject:
-            mov     eax, E_NOTIMPL
-            ret     4 * 1
+             mov     eax, E_NOTIMPL
+             ret     4 * 1
 
     IOleClientSite@GetMoniker:
-            mov     eax, E_NOTIMPL
-            ret     4 * 4
+             mov     eax, E_NOTIMPL
+             ret     4 * 4
 
     IOleClientSite@GetContainer:
-            mov     eax, [esp + 8]
-            mov     edx, 0
-            mov     [eax], edx
-            mov     eax, E_NOINTERFACE
-            ret     4 * 2
+             mov     eax, [esp + 8]
+             mov     edx, 0
+             mov     [eax], edx
+             mov     eax, E_NOINTERFACE
+             ret     4 * 2
 
     IOleClientSite@ShowObject:
-            mov     eax, E_NOTIMPL
-            ret     4 * 1
+             mov     eax, E_NOTIMPL
+             ret     4 * 1
 
     IOleClientSite@OnShowWindow:
-            mov     eax, E_NOTIMPL
-            ret     4 * 2
+             mov     eax, E_NOTIMPL
+             ret     4 * 2
 
     IOleClientSite@RequestNewObjectLayout:
-            mov     eax, E_NOTIMPL
-            ret     4 * 1
+             mov     eax, E_NOTIMPL
+             ret     4 * 1
 
     IOleInPlaceSite@GetWindow:
-            mov     eax, [esp + 8]
-            mov     edx, [clx]
-            mov     [eax], edx
-            xor     eax, eax
-            ret     4 * 2
+             mov     eax, [esp + 8]
+             mov     edx, [clx]
+             mov     [eax], edx
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceSite@ContextSensitiveHelp:
-            xor     eax, eax
-            ret     4 * 2
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceSite@CanInPlaceActivate:
-            xor     eax, eax
-            ret     4 * 1
+             xor     eax, eax
+             ret     4 * 1
 
     IOleInPlaceSite@OnInPlaceActivate:
-            xor     eax, eax
-            ret     4 * 1
+             xor     eax, eax
+             ret     4 * 1
 
     IOleInPlaceSite@OnUIActivate:
-            xor     eax, eax
-            ret     4 * 1
+             xor     eax, eax
+             ret     4 * 1
 
     IOleInPlaceSite@GetWindowContext:
 ;            mov     eax, [esp + 4]
@@ -9755,24 +9857,24 @@ interface ISpVoice,\
              ret     4 * 6
 
     IOleInPlaceSite@Scroll:
-            mov     eax, E_NOTIMPL
-            ret     4 * 2
+             mov     eax, E_NOTIMPL
+             ret     4 * 2
 
     IOleInPlaceSite@OnUIDeactivate:
-            mov     eax, eax
-            ret     4 * 2
+             mov     eax, eax
+             ret     4 * 2
 
     IOleInPlaceSite@OnInPlaceDeactivate:
-            xor     eax, eax
-            ret     4 * 1
+             xor     eax, eax
+             ret     4 * 1
 
     IOleInPlaceSite@DiscardUndoState:
-            mov     eax, E_NOTIMPL
-            ret     4 * 1
+             mov     eax, E_NOTIMPL
+             ret     4 * 1
 
     IOleInPlaceSite@DeactivateAndUndo:
-            mov     eax, E_NOTIMPL
-            ret     4 * 1
+             mov     eax, E_NOTIMPL
+             ret     4 * 1
 
     IOleInPlaceSite@OnPosRectChange:
 ;            cominvk Unknown,\
@@ -9796,80 +9898,80 @@ interface ISpVoice,\
 ;            ret     4 * 2
 
 ;    @@:
-            mov     eax, E_NOTIMPL
-            ret     4 * 2
+             mov     eax, E_NOTIMPL
+             ret     4 * 2
 
 
     IOleInPlaceFrame@GetWindow:
-            mov     eax, [esp + 8]
-            mov     edx, [clx]
-            mov     [eax], edx
-            xor     eax, eax
-            ret     4 * 2
+             mov     eax, [esp + 8]
+             mov     edx, [clx]
+             mov     [eax], edx
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceFrame@ContextSensitiveHelp:
-            mov     eax, eax
-            ret     4 * 2
+             mov     eax, eax
+             ret     4 * 2
 
     IOleInPlaceFrame@GetBorder:
-            mov     eax, [esp + 8]
-            test    eax, eax
-            jnz     @f
+             mov     eax, [esp + 8]
+             test    eax, eax
+             jnz     @f
 
-            mov     eax, E_INVALIDARG
-            ret     4 * 2
+             mov     eax, E_INVALIDARG
+             ret     4 * 2
 
    @@:
-            mov     eax, INPLACE_E_NOTOOLSPACE
-            ret     4 * 2
+             mov     eax, INPLACE_E_NOTOOLSPACE
+             ret     4 * 2
 
     IOleInPlaceFrame@RequestBorderSpace:
-            mov     eax, INPLACE_E_NOTOOLSPACE
-            ret     4 * 2
+             mov     eax, INPLACE_E_NOTOOLSPACE
+             ret     4 * 2
 
     IOleInPlaceFrame@SetBorderSpace:
-            xor     eax, eax
-            ret     4 * 2
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceFrame@SetActiveObject:
-            xor     eax, eax
-            ret     4 * 3
+             xor     eax, eax
+             ret     4 * 3
 
     IOleInPlaceFrame@InsertMenus:
-            mov     eax, E_NOTIMPL
-            ret     4 * 3
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
 
     IOleInPlaceFrame@SetMenu:
-            xor     eax, eax
-            ret     4 * 4
+             xor     eax, eax
+             ret     4 * 4
 
     IOleInPlaceFrame@RemoveMenus:
-            mov     eax, E_NOTIMPL
-            ret     4 * 2
+             mov     eax, E_NOTIMPL
+             ret     4 * 2
 
     IOleInPlaceFrame@SetStatusText:
-            xor     eax, eax
-            ret     4 * 2
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceFrame@EnableModeless:
-            xor     eax, eax
-            ret     4 * 2
+             xor     eax, eax
+             ret     4 * 2
 
     IOleInPlaceFrame@TranslateAccelerator:
-            mov     eax, E_NOTIMPL
-            ret     4 * 3
+             mov     eax, E_NOTIMPL
+             ret     4 * 3
 
     IDocHostUIHandler@ShowContextMenu:
-            mov     eax, [esp + 8]
-            cmp     eax, CONTEXT_MENU_CONTROL
-            jne     @f
+             mov     eax, [esp + 8]
+             cmp     eax, CONTEXT_MENU_CONTROL
+             jne     @f
 
-            mov     eax, E_NOTIMPL
-            ret     4 * 5
+             mov     eax, E_NOTIMPL
+             ret     4 * 5
 
     @@:
-            xor     eax, eax
-            ret     4 * 5
+             xor     eax, eax
+             ret     4 * 5
 
     IDocHostUIHandler@GetHostInfo:
              mov     eax, [nlpp]
@@ -10706,7 +10808,6 @@ interface ISpVoice,\
              mov     eax, [eax + DISPPARAMS.rgvarg]
              mov     eax, [eax + VARIANT.bstrVal]
              add     eax, 28
-
              mov     [tmp], eax
              cinvoke wcsncmp, [tmp], warg, 9
              test    eax, eax
@@ -10811,18 +10912,11 @@ interface ISpVoice,\
              add     eax, 86
              mov     ecx, eax
              mov     [tmp], eax
-
-    gms:
-             push    ecx
-             cinvoke wcsncmp, ecx, [lpt], 9
-             pop     ecx
+             cinvoke wcsstr, ecx, [lpt]
              test    eax, eax
-             jz      sms
+             jz      fwstr
 
-             add     ecx, 2
-             jmp     gms
-
-    sms:
+             mov     ecx, eax
              sub     ecx, [tmp]
              mov     [cnt], ecx
              mov     eax, ecx
@@ -10842,7 +10936,10 @@ interface ISpVoice,\
                      0,\
                      0
 
-             stdcall s2l, cpbf, 1
+             stdcall s2l, cpbf
+             cmp     edx, LONG_MIN
+             je      fwstr
+
              cmp     eax, 1
              jl      fwstr
 
@@ -10870,23 +10967,15 @@ interface ISpVoice,\
                      eax,\
                      ecx
 
-
              mov     eax, [tmp]
              add     eax, 86
              mov     ecx, eax
              mov     [tmp], eax
-
-    gmsg:
-             push    ecx
-             cinvoke wcsncmp, ecx, [lpt], 9
-             pop     ecx
+             cinvoke wcsstr, ecx, [lpt]
              test    eax, eax
-             jz      smsg
+             jz      fwstr
 
-             add     ecx, 2
-             jmp     gmsg
-
-    smsg:
+             mov     ecx, eax
              sub     ecx, [tmp]
              mov     [cnt], ecx
              mov     eax, ecx
@@ -10921,23 +11010,17 @@ interface ISpVoice,\
                      0,\
                      0
 
+             stdcall sunesc, [buff]
              mov     eax, [tmp]
              add     eax, [cnt]
              add     eax, 34
              mov     ecx, eax
              mov     [tmp], eax
-
-    gtitle:
-             push    ecx
-             cinvoke wcsncmp, ecx, [lpt], 9
-             pop     ecx
+             cinvoke wcsstr, ecx, [lpt]
              test    eax, eax
-             jz      stitle
+             jz      fwstr
 
-             add     ecx, 2
-             jmp     gtitle
-
-    stitle:
+             mov     ecx, eax
              sub     ecx, [tmp]
              mov     [cnt], ecx
              mov     eax, ecx
@@ -10956,7 +11039,7 @@ interface ISpVoice,\
                      512,\
                      0,\
                      0
-
+             stdcall sunesc, smbf
              invoke  SysFreeString, [lpt]
              invoke  lstrlen, tntb
              push    eax
@@ -10979,19 +11062,11 @@ interface ISpVoice,\
              add     eax, 34
              mov     ecx, eax
              mov     [tmp], eax
-
-
-    gflag:
-             push    ecx
-             cinvoke wcsncmp, ecx, [lpt], 9
-             pop     ecx
+             cinvoke wcsstr, ecx, [lpt]
              test    eax, eax
-             jz      sflag
+             jz      fwstr
 
-             add     ecx, 2
-             jmp     gflag
-
-    sflag:
+             mov     ecx, eax
              sub     ecx, [tmp]
              mov     [cnt], ecx
              mov     eax, ecx
@@ -11011,7 +11086,10 @@ interface ISpVoice,\
                      0,\
                      0
 
-             stdcall s2l, cpbf, 1
+             stdcall s2l, cpbf
+             cmp     edx, LONG_MIN
+             je      fwstr
+
              cmp     eax, -1
              je      fwstr
 
@@ -11048,7 +11126,7 @@ interface ISpVoice,\
              invoke  SysFreeString, [tmp]
 
     fwstr:
-            invoke  SysFreeString, [lpt]
+             invoke  SysFreeString, [lpt]
 
     eofswfe:
              mov     ebx, [pout]
@@ -11426,7 +11504,7 @@ interface ISpVoice,\
                      GWL_STYLE,\
                      WS_POPUP or WS_VISIBLE
 
-            invoke  SetWindowLong,\
+             invoke  SetWindowLong,\
                      [acw],\
                      GWL_EXSTYLE,\
                      WS_EX_LAYERED or WS_EX_TOPMOST or WS_EX_TOOLWINDOW
@@ -11693,36 +11771,8 @@ interface ISpVoice,\
 
              cmp     [wmsg], WM_COMMAND
              jnz     @f
-
+                         
              mov     eax, [wparam]
-             cmp     ax, ID_COPY_CMD
-             jne     cut
-
-             mov     [aux], wcpy
-             jmp     wmk
-
-    cut:
-             cmp     ax, ID_CUT_CMD
-             jne     paste
-
-             mov     [aux], wcut
-             jmp     wmk
-
-    paste:
-             cmp     ax, ID_PASTE_CMD
-             jne     undo
-
-             mov     [aux], wpte
-             jmp     wmk
-
-    undo:
-             cmp     ax, ID_UNDO_CMD
-             jne     close
-
-             mov     [aux], wudo
-             jmp     wmk
-
-    close:
              cmp     ax, ID_CLOSE_CMD
              jne     @f
 
@@ -11782,38 +11832,6 @@ interface ISpVoice,\
                      0
 
              jmp     @f
-
-    wmk:
-             cmp     [WebBrowser], 0
-             je      @b
-
-             cominvk WebBrowser, get_Document, DispDoc
-             test    eax, eax
-             jnz     @b
-
-             cominvk DispDoc,\
-                     QueryInterface,\
-                     IID_IHTMLDocument2,\
-                     HtmlDoc
-
-             test    eax, eax
-             jnz     rdd
-
-             cominvk HtmlDoc,\
-                     execCommand,\
-                     [aux],\
-                     VARIANT_FALSE,\
-                     VT_EMPTY,\
-                     0,\
-                     0,\
-                     0,\
-                     bdw
-
-             cominvk HtmlDoc, Release
-
-    rdd:
-             cominvk DispDoc, Release
-             jmp     @b
 
     wms:
              mov     eax, [lparam]
@@ -11955,6 +11973,11 @@ interface ISpVoice,\
              test    eax, eax
              jnz     @f
 
+             cominvk OleObject,\
+                     QueryInterface,\
+                     IID_IOleInPlaceActiveObject,\
+                     OleInPlaceActiveObject
+
              mov     ebx, [pmo]
              lea     eax, [ebx + WB_OBJ.iOleClientSite]
              cominvk OleObject, SetClientSite, eax
@@ -12032,6 +12055,12 @@ interface ISpVoice,\
              cominvk WebBrowser, Release
 
     role:
+             cmp     [OleInPlaceActiveObject], 0
+             je      role3
+
+             cominvk OleInPlaceActiveObject, Release
+
+    role3:
              cmp     [OleObject], 0
              je      rwbu
 
@@ -12319,7 +12348,10 @@ interface ISpVoice,\
 
     nodefcl:
              lea     eax, dword [esi]
-             stdcall s2l, eax, 1
+             stdcall s2l, eax
+             cmp     edx, LONG_MIN
+             je      rest
+
              cmp     eax, 255
              jg      rest
 
@@ -12370,13 +12402,13 @@ interface ISpVoice,\
 
     ;---------------------------------------------------------------------------------------------------------------------------
 
-    proc s2l uses edi ecx, str, errno
+    proc s2l uses edi ecx, str
              mov     eax, 10
              mov     edi, [str]
 
     s2lchk:
              cmp     byte [edi], 0
-             je      _eofloop
+             je      eofs2l
 
              cmp     byte [edi], 'x'
              je      @f
@@ -12434,66 +12466,159 @@ interface ISpVoice,\
              inc     edi
              jmp     s2lchk
 
-    _eofloop:
+    eofs2l:
              cinvoke strtol, dword [str], lpt, eax
+             xor     edx, edx
              mov     ecx, [lpt]
              cmp     ecx, [str]
-             je      s2lerr
+             jne     @f
 
+    s2lerr:
+             mov     edx, LONG_MIN
+
+    @@:
              ret
+    endp
 
-     s2lerr:
-             cmp    [errno], 1
-             jne    @f
+    ;---------------------------------------------------------------------------------------------------------------------------
 
-             mov    eax, -1
-             ret
-
-     @@:
-             cmp    [errno], 2
-             je     xerr
-
-             cmp    [errno], 3
-             jne    @f
-
-             mov    eax, LONG_MAX
-             ret
-     @@:
-
-             jmp    error
-     endp
-
-     ;---------------------------------------------------------------------------------------------------------------------------
-
-     proc s2f uses ecx, str, errno
+    proc s2f uses ecx, str, errno
              cinvoke strtod, [str], lpt
              mov     ecx, [lpt]
              cmp     ecx, [str]
-             je      @f
+             jne     @f
 
+             mov     eax, -1
+
+    @@:
              ret
+    endp
 
-     @@:
-             cmp    [errno], 1
-             jne    @f
+    ;---------------------------------------------------------------------------------------------------------------------------
 
-             mov    eax, -1
+    proc sunesc uses ebx, str
+             mov     ebx, [str]
+             dec     ebx
+
+    bofune:
+             inc     ebx
+             cmp     byte [ebx], 0
+             je      eofune
+
+             cmp     byte [ebx], '&'
+             jne     bofune
+
+             inc     ebx
+             cinvoke strncmp, ebx, 'quot;', 5
+             test    eax, eax
+             jnz     @f
+
+             dec     ebx
+             mov     byte [ebx], '"'
+             inc     ebx
+
+             mov     eax, ebx
+             add     eax, 5
+             invoke  lstrcpy, ebx, eax
+             dec     ebx
+             jmp     bofune
+
+    @@:
+             cinvoke strncmp, ebx, 'amp;', 4
+             test    eax, eax
+             jnz     @f
+
+             dec     ebx
+             mov     byte [ebx], '&'
+             inc     ebx
+
+             mov     eax, ebx
+             add     eax, 4
+             invoke  lstrcpy, ebx, eax
+             dec     ebx
+             jmp     bofune
+
+    @@:
+             cinvoke strncmp, ebx, 'lt;', 3
+             test    eax, eax
+             jnz     @f
+
+             dec     ebx
+             mov     byte [ebx], '<'
+             inc     ebx
+
+             mov     eax, ebx
+             add     eax, 3
+             invoke  lstrcpy, ebx, eax
+             dec     ebx
+             jmp     bofune
+
+    @@:
+             cinvoke strncmp, ebx, 'gt;', 3
+             test    eax, eax
+             jnz     bofune
+
+             dec     ebx
+             mov     byte [ebx], '>'
+             inc     ebx
+
+             mov     eax, ebx
+             add     eax, 3
+             invoke  lstrcpy, ebx, eax
+             dec     ebx
+             jmp     bofune
+
+
+    eofune:
+             xor     eax, eax
              ret
+    endp
 
-     @@:
-             cmp    [errno], 2
-             je     xerr
+    ;---------------------------------------------------------------------------------------------------------------------------
 
-             cmp    [errno], 3
-             jne    @f
+;    proc laststr uses ebx, str, lstr
+;             mov     ebx, [str]
 
-             mov    eax, LONG_MAX
-             ret
+;    @@:
+;             cinvoke strstr, ebx, [lstr]
+;             test    eax, eax
+;             jz      @f
 
-     @@:
-             jmp    error
+;             mov     ebx, eax
+;             jmp     @b
 
-     endp
+;    @@:
+;             cmp     ebx, [str]
+;             je      @f
+
+;             mov     eax, ebx
+
+;    @@:
+;             ret
+;    endp
+
+    ;---------------------------------------------------------------------------------------------------------------------------
+
+;    proc lastwstr uses ebx, wstr, lwstr
+;             mov     ebx, [wstr]
+
+;    @@:
+;             cinvoke wcsstr, ebx, [lwstr]
+;             test    eax, eax
+;             jz      @f
+
+;             mov     ebx, eax
+;             jmp     @b
+
+;    @@:
+;             cmp     ebx, [wstr]
+;             je      @f
+
+;             mov     eax, ebx
+
+;    @@:
+;             ret
+;    endp
 
 ;---------------------------------------------------------------------------------------------------------------------------
 
@@ -12643,6 +12768,7 @@ interface ISpVoice,\
     tstb                          db '</string>', 0
     tnta                          db '<number>', 0
     tntb                          db '</number>', 0
+    sdir                          db '/', 0
     zip                           db '.zip', 0
     bmp                           db '.bmp', 0
     jpg                           db '.jpg', 0
@@ -12684,10 +12810,11 @@ interface ISpVoice,\
                                   du 'function () { if (window.external) { window.external.__jser'
                                   du '; clearInterval(_cct_iid); }}, 0); };', 0
     jsf                           du 'window.onerror = function () { window.external.__jser; }; i'
-                                  du 'f (!document._cct_wb_ && document.msFullscreenEnabled) { do'
-                                  du 'cument._cct_wb_ = true; document.addEventListener("MSFullsc'
-                                  du 'reenChange", function () { if (document.msFullscreenElement'
-                                  du ') window.external.__fson; }, false); }', 0
+                                  du 'f (!document._cct_wb_ && document.msFullscreenEnabled && do'
+                                  du 'cument.addEventListener) { document._cct_wb_ = true; docume'
+                                  du 'nt.addEventListener("MSFullscreenChange", function () { if '
+                                  du '(document.msFullscreenElement) window.external.__fson; }, f'
+                                  du 'alse); }', 0
     wfle                          du 'file:', 0
     wspv                          du ' ', 0
     wcls                          WNDCLASS 0, WBMainProc, 0, 0, 0, 0, 0, COLOR_WINDOW + 1, 0, clsn
@@ -12699,6 +12826,7 @@ interface ISpVoice,\
     OleWindow                     IOleWindow
     WebBrowser                    IWebBrowser2
     OleObject                     IOleObject
+    OleInPlaceActiveObject        IOleInPlaceActiveObject
     ConnPointContainer            IConnectionPointContainer
     ConnPoint                     IConnectionPoint
     CustomDoc                     ICustomDoc
@@ -12747,6 +12875,7 @@ interface ISpVoice,\
     IID_ISpVoice                  GUID 6C44DF74-72B9-4992-A1EC-EF996E0422D4
     IID_IOleObject                GUID 00000112-0000-0000-C000-000000000046
     IID_IOleWindow                GUID 00000114-0000-0000-C000-000000000046
+    IID_IOleInPlaceActiveObject   GUID 00000117-0000-0000-C000-000000000046
     IID_IWebBrowser2              GUID D30C1661-CDAF-11D0-8A3E-00C04FC9E26E
     IID_IHTMLDocument2            GUID 332C4425-26CB-11D0-B483-00C04FD90119
     IID_IHTMLElementCollection    GUID 3050F21F-98B5-11CF-BB82-00AA00BDCE0B
@@ -12920,10 +13049,6 @@ section '.rsrc' resource data readable
     resource accelerators, ID_SHDOCLC_ACCEL, LANG_ENGLISH + SUBLANG_DEFAULT, vkeys
                         
     accelerator vkeys,\
-                FVIRTKEY + FCONTROL, 'X', ID_CUT_CMD,\
-                FVIRTKEY + FCONTROL, 'C', ID_COPY_CMD,\
-                FVIRTKEY + FCONTROL, 'V', ID_PASTE_CMD,\
-                FVIRTKEY + FCONTROL, 'Z', ID_UNDO_CMD,\
                 FVIRTKEY + FCONTROL, 'W', ID_CLOSE_CMD
 
     resource group_icons, IDI_APPLICATION, LANG_ENGLISH + SUBLANG_DEFAULT, main_icon
@@ -12949,7 +13074,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.20.0.38',\
-            'ProductVersion', '1.20.0.38',\
+            'FileVersion', '1.22.0.40',\
+            'ProductVersion', '1.22.0.40',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
