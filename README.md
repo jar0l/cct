@@ -283,6 +283,7 @@ With strings: the ASCII codes must be located between the octothorpe character  
 					 
 	/unscrolling     Show a window without scroll-bars.
 	/unselectable    Show a window with non-selectable text.
+	/noback          Disable the back navigation key.
 	/resizable       Show a resizable window.
 	/dialog          Show a dialog box.
 	/flat            Show a flat window.
@@ -408,7 +409,11 @@ With strings: the ASCII codes must be located between the octothorpe character  
                      the RTL_OSVERSIONINFOEXW structure.
 					 
 # Scripting:
-This application allows you to use automation technology that provides scripting capabilities similar to batch files, but with a wider range of supported functions. You can also use script code from the command line.
+This application allows you to use automation technology that provides scripting capabilities similar to batch files, but with a wider range of supported functions. 
+
+
+You can also use script code from the command line separating each instruction with the semicolon character (;) or the colon character (:) depending on whether it’s JScript or VBScript respectively.
+
 
 Extended objects and functions have been created for the operations: --js[-encoded], --vbs[-encoded], --web-browser, and --swf. The supported languages are: JScript, VBScript, and ActionScript respectively.
 

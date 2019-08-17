@@ -92,6 +92,7 @@ SCRIPTINFO_ITYPEINFO                          = 2
 SCRIPTINFO_ALL_FLAGS                          = 3
 OLEIVERB_INPLACEACTIVATE                      = -5
 DISPID_TITLECHANGE                            = 113
+DISPID_BEFORENAVIGATE2                        = 250
 DISPID_NAVIGATECOMPLETE2                      = 252
 DISPID_DOCUMENTCOMPLETE                       = 259
 DISPID_READYSTATECHANGE                       = -609
@@ -4386,9 +4387,17 @@ interface ISpVoice,\
     trusted:
              invoke  lstrcmpi, dword [esi], '/trusted'
              test    eax, eax
-             jnz     flat
+             jnz     noback
 
              mov     [bsrm], 1
+             jmp     ekarg
+
+    noback:
+             invoke  lstrcmpi, dword [esi], '/noback'
+             test    eax, eax
+             jnz     flat
+
+             mov     [nobk], 10h
              jmp     ekarg
 
     flat:
@@ -9299,6 +9308,28 @@ interface ISpVoice,\
 
     IWebBrowserEvents@Invoke:
              mov     eax, [esp + 8]
+             cmp     eax, DISPID_BEFORENAVIGATE2
+             jne     @f
+
+             cmp     [nobk], 11h
+             jne     goback
+
+             mov     [nobk], 10h
+             mov     eax, [esp + 24]
+             mov     eax, [eax + DISPPARAMS.rgvarg]
+             xor     edx, edx
+             mov     dx, [eax + VARIANT.vt]
+             cmp     edx, VT_BYREF or VT_BOOL
+             jne     goback
+
+             mov     edx, [eax + VARIANT.pboolVal]
+             mov     word [edx], VARIANT_TRUE
+
+    goback:
+             xor     eax, eax
+             ret     4 * 9
+
+    @@:
              cmp     eax, DISPID_NAVIGATECOMPLETE2
              jne     @f
 
@@ -10020,6 +10051,29 @@ interface ISpVoice,\
              ret     4 * 4
 
     IDocHostUIHandler@TranslateAccelerator:
+             xor     eax, eax
+             xor     edx, edx
+             mov     dl, [nobk]
+             mov     al, 01h
+             not     eax
+             and     eax, edx
+             mov     [nobk], al
+             mov     eax, [esp + 8]
+             mov     eax, [eax + MSG.message]
+             cmp     eax, WM_KEYUP
+             je      @f
+
+             mov     eax, [esp + 8]
+             mov     eax, [eax + MSG.wParam]
+             cmp     eax, VK_BACK
+             jne     @f
+
+             xor     eax, eax
+             mov     al, [nobk]
+             or      eax, 01h
+             mov     [nobk], al
+
+    @@:
              mov     eax, E_NOTIMPL
              ret     4 * 4
 
@@ -12631,6 +12685,7 @@ interface ISpVoice,\
     bwbt                          db 0
     bmre                          db 0
     qsaf                          db 0
+    nobk                          db 0
     nlpp                          dd 6
     rows                          dd 0
     rowc                          dd 0
@@ -13074,7 +13129,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.22.0.40',\
-            'ProductVersion', '1.22.0.40',\
+            'FileVersion', '1.24.0.42',\
+            'ProductVersion', '1.24.0.42',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
