@@ -8365,6 +8365,15 @@ interface ISpVoice,\
              jmp     eofgn
 
     @@:
+             cinvoke wcscmp, dword [esi], wsys
+             test    eax, eax
+             jnz     @f
+
+             mov     eax, [tmp]
+             mov     dword [eax], 19
+             jmp     eofgn
+
+    @@:
              add     [tmp], 4
              add     esi, 4
              dec     [pout]
@@ -8386,12 +8395,60 @@ interface ISpVoice,\
              mov     eax, [esp + 28]
              mov     [tmp], eax
              mov     eax, [esp + 8]
+             cmp     eax, 19
+             jne     cinput
+
+             mov     eax, [esp + 24]
+             push    ebx ecx edx esi edi
+             mov     ecx, [eax + DISPPARAMS.cArgs]
+             cmp     ecx, 1
+             jne     bpc
+
+             mov     ebx, [eax + DISPPARAMS.rgvarg]
+
+    vt12:
+             xor     edx, edx
+             mov     dx, [ebx + VARIANT.vt]
+             cmp     edx, VT_BYREFVAR
+             jne     nobv13
+
+             mov     ebx, [ebx + VARIANT.pvarVal]
+             jmp     vt12
+
+    nobv13:
+             cmp     edx, VT_BSTR
+             jne     btm
+
+             mov     edx, [ebx + VARIANT.bstrVal]
+             invoke  WideCharToMultiByte,\
+                     CP_ACP,\
+                     0,\
+                     edx,\
+                     -1,\
+                     smbf,\
+                     MAX_PATH * 8,\
+                     0,\
+                     0
+
+             cinvoke system, smbf
+             mov     [pout], eax
+
+             cmp     [tmp], 0
+             je      risok2
+
+             invoke  VariantInit, [tmp]
+             mov     eax, [tmp]
+             mov     [eax + VARIANT.vt], VT_I4
+             mov     ebx, [pout]
+             mov     [eax + VARIANT.lVal], ebx
+             jmp     risok2
+
+    cinput:
              cmp     eax, 18
              jne     cfpop
 
              mov     [bwbc], 1
              jmp     finput
-
     cfpop:
              cmp     eax, 17
              jne     fhwnd
@@ -12851,6 +12908,7 @@ interface ISpVoice,\
     wslp                          du 'sleep', 0
     wpwd                          du 'password', 0
     wsin                          du 'input', 0
+    wsys                          du 'system', 0
     warg                          du 'arguments', 0
     whwn                          du 'hwnd', 0
     wpup                          du 'popup', 0
@@ -13129,7 +13187,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.24.0.42',\
-            'ProductVersion', '1.24.0.42',\
+            'FileVersion', '1.25.0.44',\
+            'ProductVersion', '1.25.0.44',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'

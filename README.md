@@ -524,7 +524,36 @@ Example (JScript):
 
 	var n = console.popup("My message!", "My title", 49);
 	
+
+**.sleep** (milliseconds):
+
+Suspends the execution of the current thread until the time-out interval elapses.
+
+Arguments:
+
+	milliseconds: Integer value indicating the interval you want the script process   
+	              to be inactive.  
+				  
+				  
+Example (JScript):
+
+	console.sleep(1000);
 	
+**.system** (command):
+
+The system function executes an internal operating system command, or an .EXE, .COM (.CMD in Windows NT) or .BAT file. 
+The system function finds the command interpreter, which is typically CMD.EXE in the Windows NT operating system or COMMAND.COM in Windows. 
+The system function then passes the argument string to the command interpreter.
+
+Arguments:
+
+	command: The command to be executed.
+
+Example (JScript):
+
+	console.system('type "my file.txt"');
+	
+
 **.quit** [([code])]:
 
 Forces script execution to stop at any time.
@@ -539,20 +568,7 @@ Example (JScript):
 
 	console.quit(-1);
 	console.quit(36);
- 
-**.sleep** (milliseconds):
-
-Suspends the execution of the current thread until the time-out interval elapses.
-
-Arguments:
-
-	milliseconds: Integer value indicating the interval you want the script process   
-	              to be inactive.  
-				  
-				  
-Example (JScript):
-
-	console.sleep(1000);
+	console.quit;
 
 
 **WebBrowser:**
