@@ -1,5 +1,5 @@
 ;---------------------------------------------------------------------------------------------------------------------------
-; Console Command Tool (CCT) v1.0
+; Console Command Tool (CCT) v1.26.0.48
 ; Created in 2018 by José A. Rojo L.
 ;---------------------------------------------------------------------------------------------------------------------------
 
@@ -13190,7 +13190,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.25.0.44',\
-            'ProductVersion', '1.25.0.44',\
+            'FileVersion', '1.26.0.48',\
+            'ProductVersion', '1.26.0.48',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
