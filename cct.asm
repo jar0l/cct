@@ -3586,6 +3586,7 @@ interface ISpVoice,\
              cominvk SpVoice, WaitUntilDone, INFINITE
              cominvk SpVoice, Release
              invoke  TerminateThread, [aux], 0
+             invoke  CloseHandle, [aux]
              invoke  SysFreeString, [cla]
              invoke  CoUninitialize
              jmp     exit
@@ -8718,6 +8719,9 @@ interface ISpVoice,\
              cinvoke _getch
              mov     [bwbc], 1
 
+             push    eax
+             invoke  CloseHandle, [lpt]
+             pop     eax
              cmp     eax, 39h
              je      rvkcod
 
@@ -12290,7 +12294,6 @@ interface ISpVoice,\
              invoke  SendInput, 1, ip, sizeof.INPUT
 
     @@:
-             invoke  TerminateThread, [lpt], 0
              ret
     endp
 
