@@ -1,5 +1,5 @@
 ;---------------------------------------------------------------------------------------------------------------------------
-; Console Command Tool (CCT) v1.26.0.48
+; Console Command Tool (CCT) v1.28.0.50
 ; Created in 2018 by José A. Rojo L.
 ;---------------------------------------------------------------------------------------------------------------------------
 
@@ -8713,15 +8713,11 @@ interface ISpVoice,\
                      0,\
                      0
 
-             mov     [lpt], eax
+             invoke  CloseHandle, eax
 
     getvk:
              cinvoke _getch
              mov     [bwbc], 1
-
-             push    eax
-             invoke  CloseHandle, [lpt]
-             pop     eax
              cmp     eax, 39h
              je      rvkcod
 
@@ -12294,6 +12290,7 @@ interface ISpVoice,\
              invoke  SendInput, 1, ip, sizeof.INPUT
 
     @@:
+             invoke  ExitThread, 0
              ret
     endp
 
@@ -13190,7 +13187,7 @@ section '.rsrc' resource data readable
     versioninfo version, VOS__WINDOWS32, VFT_APP, VFT2_UNKNOWN, LANG_ENGLISH + SUBLANG_DEFAULT, 0,\
             'FileDescription', 'Command Console Tool (CCT)',\
             'LegalCopyright', '2018, José A. Rojo L.',\
-            'FileVersion', '1.26.0.48',\
-            'ProductVersion', '1.26.0.48',\
+            'FileVersion', '1.28.0.50',\
+            'ProductVersion', '1.28.0.50',\
             'ProductName', 'cct',\
             'OriginalFilename', 'cct.exe'
